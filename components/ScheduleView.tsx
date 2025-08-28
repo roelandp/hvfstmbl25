@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
@@ -15,8 +16,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const QUARTER_WIDTH = 40;
 const HOUR_WIDTH = QUARTER_WIDTH * 4;
-const VENUE_COL_WIDTH = 100;
+const VENUE_COL_WIDTH = 120;
 const SCREEN_WIDTH = Dimensions.get('window').width;
+const ROW_HEIGHT = 80;
 
 const getOffset = (timeStr: string, firstHour: number) => {
   const dt = new Date(timeStr);
@@ -24,9 +26,24 @@ const getOffset = (timeStr: string, firstHour: number) => {
   return ((minutes - firstHour * 60) / 15) * QUARTER_WIDTH;
 };
 
+const formatEventTime = (timeStr: string) => {
+  try {
+    const dt = new Date(timeStr);
+    if (isNaN(dt.getTime())) {
+      return timeStr; // Return original if invalid
+    }
+    const hours = dt.getHours().toString().padStart(2, '0');
+    const minutes = dt.getMinutes().toString().padStart(2, '0');
+    return `${hours}:${minutes}`;
+  } catch (error) {
+    return timeStr;
+  }
+};
+
 export default function ScheduleView() {
   const insets = useSafeAreaInsets();
   const scrollRef = useRef<ScrollView>(null);
+  const headerScrollRef = useRef<ScrollView>(null);
   const [schedule, setSchedule] = useState<any[]>([]);
   const [venues, setVenues] = useState<any[]>([]);
   const [selectedDayIdx, setSelectedDayIdx] = useState(0);
@@ -97,9 +114,12 @@ export default function ScheduleView() {
     }
 
     const hours = [];
-    for (let h = firstHour; h < lastHour; h++) hours.push(`${h}:00`);
+    for (let h = firstHour; h <= lastHour; h++) {
+      hours.push(h);
+    }
 
     const totalWidth = (lastHour - firstHour) * HOUR_WIDTH;
+    const totalQuarters = (lastHour - firstHour) * 4;
 
     if (loading) {
       return (
@@ -109,22 +129,28 @@ export default function ScheduleView() {
       );
     }
 
-    // Generate quarter-hour marks for vertical grid lines
-    const totalQuarters = (lastHour - firstHour) * 4;
-
     return (
       <>
+        {/* Integrated Day Tabs */}
         <View style={styles.tabsRow}>
           {days.map((d, idx) => {
             const dateObj = new Date(d);
-            const label = !isNaN(dateObj.getTime()) ? dateObj.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase() : d;
+            const label = !isNaN(dateObj.getTime()) 
+              ? dateObj.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase() 
+              : d;
             return (
               <TouchableOpacity
                 key={d}
-                style={[styles.tab, idx === selectedDayIdx && styles.tabActive]}
+                style={[
+                  styles.tab, 
+                  idx === selectedDayIdx && styles.tabActive
+                ]}
                 onPress={() => setSelectedDayIdx(idx)}
               >
-                <Text style={idx === selectedDayIdx ? styles.tabTextActive : styles.tabText}>
+                <Text style={[
+                  styles.tabText,
+                  idx === selectedDayIdx && styles.tabTextActive
+                ]}>
                   {label}
                 </Text>
               </TouchableOpacity>
@@ -132,59 +158,109 @@ export default function ScheduleView() {
           })}
         </View>
 
-        {/* Time labels above scrollable grid */}
-        <ScrollView horizontal style={{ minHeight: 36 }}>
-          <View style={[styles.timeLabelsRow, { width: totalWidth }]}>
-            {hours.map((h, idx) => (
-              <View key={h} style={[styles.hourBlock, { width: HOUR_WIDTH }]}>
-                <Text style={styles.hourLabel}>{h}</Text>
-                {/* Quarter-hour ticks */}
-                <View style={styles.quarterTicksContainer}>
-                  {[1, 2, 3].map((q) => (
-                    <View key={q} style={[styles.quarterTick, { left: q * QUARTER_WIDTH - 1 }]} />
-                  ))}
-                </View>
-              </View>
-            ))}
-          </View>
-        </ScrollView>
-
-        <View style={{ flexDirection: 'row', flex: 1, alignItems: 'flex-start' }}>
-          {/* Sticky Venue Column */}
-          <View style={styles.venueColumn}>
-            <View style={[styles.timeLabelsRow, { height: 32, justifyContent: 'center' }]}>
-              {/* empty space above venue column for time labels */}
-            </View>
-            {venueIds.map((vid) => {
-              const v = venues.find((x) => x.id === vid);
-              return (
-                <View key={vid} style={styles.venueRow}>
-                  <Text style={styles.venueLabel}>{v?.name || vid}</Text>
-                </View>
-              );
-            })}
-          </View>
-
-          <ScrollView horizontal style={{ flex: 1 }} ref={scrollRef}>
-            <View style={{ position: 'relative' }}>
-              {/* Grid lines behind events */}
-              <View style={[styles.gridLinesContainer, { width: totalWidth, height: venueIds.length * 64 }]}>
-                {Array.from({ length: totalQuarters + 1 }).map((_, idx) => (
-                  <View key={idx} style={[styles.gridLine, { left: idx * QUARTER_WIDTH }]} />
+        {/* Schedule Grid Container */}
+        <View style={styles.scheduleContainer}>
+          {/* Time Header Row */}
+          <View style={styles.timeHeaderContainer}>
+            <View style={[styles.venueColumnHeader, { width: VENUE_COL_WIDTH }]} />
+            <ScrollView 
+              horizontal 
+              style={styles.timeHeaderScroll}
+              ref={headerScrollRef}
+              scrollEnabled={false}
+              showsHorizontalScrollIndicator={false}
+            >
+              <View style={[styles.timeHeaderRow, { width: totalWidth }]}>
+                {hours.map((hour, idx) => (
+                  <View key={hour} style={[styles.hourHeader, { width: HOUR_WIDTH }]}>
+                    <Text style={styles.hourHeaderText}>
+                      {hour.toString().padStart(2, '0')}:00
+                    </Text>
+                  </View>
                 ))}
               </View>
+            </ScrollView>
+          </View>
 
-              {/* Rows */}
-              <View>
-                {venueIds.map((vid) => (
-                  <View key={vid} style={[styles.venueRow, { position: 'relative' }]}>
+          {/* Main Schedule Content */}
+          <View style={styles.scheduleContent}>
+            {/* Fixed Venue Column */}
+            <View style={[styles.venueColumn, { width: VENUE_COL_WIDTH }]}>
+              {venueIds.map((vid) => {
+                const v = venues.find((x) => x.id === vid);
+                return (
+                  <View key={vid} style={[styles.venueRow, { height: ROW_HEIGHT }]}>
+                    <Text style={styles.venueLabel} numberOfLines={2}>
+                      {v?.name || vid}
+                    </Text>
+                  </View>
+                );
+              })}
+            </View>
+
+            {/* Scrollable Schedule Grid */}
+            <ScrollView 
+              horizontal 
+              style={styles.scheduleScroll}
+              ref={scrollRef}
+              showsHorizontalScrollIndicator={false}
+              onScroll={(event) => {
+                const { x } = event.nativeEvent.contentOffset;
+                headerScrollRef.current?.scrollTo({ x, animated: false });
+              }}
+              scrollEventThrottle={16}
+            >
+              <View style={[styles.scheduleGrid, { width: totalWidth }]}>
+                {/* Background Grid Lines */}
+                <View style={[styles.gridBackground, { width: totalWidth, height: venueIds.length * ROW_HEIGHT }]}>
+                  {/* Vertical lines for 15-minute intervals and hours */}
+                  {Array.from({ length: totalQuarters + 1 }).map((_, idx) => {
+                    const isHourLine = idx % 4 === 0;
+                    const isHalfHourLine = idx % 2 === 0 && !isHourLine;
+                    return (
+                      <View 
+                        key={idx} 
+                        style={[
+                          styles.gridLineVertical, 
+                          { left: idx * QUARTER_WIDTH },
+                          isHourLine && styles.gridLineHour,
+                          isHalfHourLine && styles.gridLineHalfHour
+                        ]} 
+                      />
+                    );
+                  })}
+                  
+                  {/* Horizontal lines for venue rows */}
+                  {venueIds.map((_, idx) => (
+                    <View 
+                      key={idx} 
+                      style={[
+                        styles.gridLineHorizontal, 
+                        { top: (idx + 1) * ROW_HEIGHT }
+                      ]} 
+                    />
+                  ))}
+                </View>
+
+                {/* Event Blocks */}
+                {venueIds.map((vid, venueIdx) => (
+                  <View 
+                    key={vid} 
+                    style={[
+                      styles.venueRowEvents, 
+                      { 
+                        top: venueIdx * ROW_HEIGHT,
+                        height: ROW_HEIGHT 
+                      }
+                    ]}
+                  >
                     {dayItems
                       .filter((i) => i.venue === vid)
                       .map((item, iidx) => {
                         const left = getOffset(item.timestart, firstHour);
                         const right = getOffset(item.timeend, firstHour);
-                        const width = right - left;
-                        const venueName = venues.find(v => v.id === vid)?.name || vid;
+                        const width = Math.max(right - left, 60); // Minimum width for readability
+                        
                         return (
                           <View
                             key={iidx}
@@ -194,144 +270,246 @@ export default function ScheduleView() {
                                 position: 'absolute',
                                 left: left,
                                 width: width,
+                                height: ROW_HEIGHT - 8,
+                                top: 4,
                               },
                             ]}
                           >
-                            <Text style={styles.eventText}>
-                              {item.title}{'\n'}
-                              <Text style={styles.eventTime}>{new Date(item.timestart).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - {new Date(item.timeend).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
+                            <Text style={styles.eventTitle} numberOfLines={2}>
+                              {item.title}
+                            </Text>
+                            <Text style={styles.eventTime}>
+                              {formatEventTime(item.timestart)} - {formatEventTime(item.timeend)}
                             </Text>
                           </View>
                         );
                       })}
                   </View>
                 ))}
-              </View>
 
-              {/* Current Time Line */}
-              <View
-                style={{
-                  position: 'absolute',
-                  left: currentTimeOffset,
-                  top: 32,
-                  bottom: 0,
-                  width: 2,
-                  backgroundColor: 'red',
-                  zIndex: 5,
-                }}
-              />
-            </View>
-          </ScrollView>
+                {/* Current Time Line */}
+                <View
+                  style={[
+                    styles.currentTimeLine,
+                    {
+                      left: currentTimeOffset,
+                      height: venueIds.length * ROW_HEIGHT,
+                    }
+                  ]}
+                />
+              </View>
+            </ScrollView>
+          </View>
         </View>
       </>
     );
   };
 
   return (
-    <View style={{ flex: 1, paddingTop: 12 }}>
+    <View style={styles.container}>
       {renderSchedule()}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  loader: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  container: {
+    flex: 1,
+  },
+  loader: { 
+    flex: 1, 
+    justifyContent: 'center', 
+    alignItems: 'center' 
+  },
+
+  // Tab Styles - Integrated with header
   tabsRow: {
     flexDirection: 'row',
     justifyContent: 'center',
     backgroundColor: theme.colors.primary,
-    paddingVertical: 5,
-    height: 36,
+    paddingVertical: 0,
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    marginTop: 0,
     marginBottom: 0,
   },
   tab: {
-    paddingHorizontal: 10,
-    paddingVertical: 2,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
     marginHorizontal: 4,
-    backgroundColor: theme.colors.background,
-    borderRadius: 12,
-    height: 28,
-    justifyContent: 'center',
+    backgroundColor: 'transparent',
+    borderRadius: 20,
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
+    minWidth: 60,
+    alignItems: 'center',
   },
-  tabActive: { backgroundColor: theme.colors.background, borderColor: theme.colors.primary, borderWidth: 1 },
-  tabText: { color: '#eee', fontSize: 12 },
-  tabTextActive: { color: theme.colors.primary, fontSize: 12, fontWeight: '600' },
-  timeLabelsRow: {
+  tabActive: { 
+    backgroundColor: theme.colors.background,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
+    marginBottom: -1, // Overlap to remove gap
+  },
+  tabText: { 
+    color: 'rgba(255,255,255,0.7)', 
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  tabTextActive: { 
+    color: theme.colors.primary, 
+    fontSize: 13, 
+    fontWeight: '700',
+  },
+
+  // Schedule Container
+  scheduleContainer: {
+    flex: 1,
+    backgroundColor: theme.colors.background,
+    marginTop: -1, // Remove any gap
+  },
+
+  // Time Header
+  timeHeaderContainer: {
     flexDirection: 'row',
+    borderBottomWidth: 2,
+    borderBottomColor: theme.colors.primary,
     backgroundColor: theme.colors.background,
-    borderBottomWidth: 1,
-    borderColor: '#ccc',
-  },
-  hourBlock: {
-    height: 32,
-    justifyContent: 'center',
-    borderRightWidth: 1,
-    borderColor: '#ccc',
-    backgroundColor: theme.colors.background,
-    position: 'relative',
-  },
-  hourLabel: { fontSize: 12, paddingLeft: 4, color: theme.colors.text },
-  quarterTicksContainer: {
-    position: 'absolute',
-    top: 24,
-    left: 0,
-    right: 0,
-    height: 8,
-  },
-  quarterTick: {
-    position: 'absolute',
-    width: 1,
-    height: 8,
-    backgroundColor: '#ccc',
-  },
-  venueColumn: {
-    width: VENUE_COL_WIDTH,
-    backgroundColor: theme.colors.background,
-    borderRightWidth: 1,
-    borderColor: '#ccc',
     zIndex: 10,
-    paddingTop: 0,
-    marginTop: 0,
+    elevation: 3,
+  },
+  venueColumnHeader: {
+    height: 50,
+    backgroundColor: theme.colors.background,
+    borderRightWidth: 1,
+    borderRightColor: '#ddd',
+  },
+  timeHeaderScroll: {
+    flex: 1,
+  },
+  timeHeaderRow: {
+    flexDirection: 'row',
+    height: 50,
+  },
+  hourHeader: {
+    height: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRightWidth: 1,
+    borderRightColor: '#ddd',
+    backgroundColor: theme.colors.background,
+  },
+  hourHeaderText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: theme.colors.text,
+  },
+
+  // Main Schedule Content
+  scheduleContent: {
+    flex: 1,
+    flexDirection: 'row',
+  },
+
+  // Venue Column
+  venueColumn: {
+    backgroundColor: theme.colors.background,
+    borderRightWidth: 1,
+    borderRightColor: '#ddd',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 2, height: 0 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    zIndex: 10,
   },
   venueRow: {
-    height: 64,
-    borderBottomWidth: 1,
-    borderColor: '#eee',
     justifyContent: 'center',
-    position: 'relative',
+    paddingHorizontal: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
   },
   venueLabel: {
     fontSize: 13,
     fontWeight: '600',
-    paddingLeft: 6,
     color: theme.colors.text,
+    textAlign: 'left',
+  },
+
+  // Schedule Scroll Area
+  scheduleScroll: {
+    flex: 1,
+  },
+  scheduleGrid: {
+    position: 'relative',
+  },
+
+  // Grid Background
+  gridBackground: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+  },
+  gridLineVertical: {
+    position: 'absolute',
+    width: 1,
+    height: '100%',
+    backgroundColor: '#eee',
+  },
+  gridLineHour: {
+    backgroundColor: theme.colors.primary,
+    width: 2,
+    opacity: 0.3,
+  },
+  gridLineHalfHour: {
+    backgroundColor: '#ccc',
+    width: 1,
+    opacity: 0.5,
+  },
+  gridLineHorizontal: {
+    position: 'absolute',
+    width: '100%',
+    height: 1,
+    backgroundColor: '#eee',
+    left: 0,
+  },
+
+  // Event Rows and Blocks
+  venueRowEvents: {
+    position: 'absolute',
+    width: '100%',
   },
   eventBlock: {
-    height: 64,
     backgroundColor: theme.colors.accent,
-    borderRadius: 4,
-    paddingHorizontal: 6,
-    paddingVertical: 4,
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
     justifyContent: 'center',
-    minWidth: 40,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 1, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
   },
-  eventText: { color: '#fff', fontSize: 12 },
+  eventTitle: { 
+    color: '#fff', 
+    fontSize: 12,
+    fontWeight: '600',
+    marginBottom: 2,
+  },
   eventTime: {
     fontSize: 10,
     color: '#fff',
-    opacity: 0.8,
+    opacity: 0.9,
   },
-  gridLinesContainer: {
+
+  // Current Time Line
+  currentTimeLine: {
     position: 'absolute',
-    top: 32 + 1, // below timeLabelsRow border
-    flexDirection: 'row',
-    zIndex: 0,
-  },
-  gridLine: {
-    position: 'absolute',
-    width: 1,
+    width: 2,
+    backgroundColor: 'red',
     top: 0,
-    bottom: 0,
-    backgroundColor: '#ddd',
+    zIndex: 5,
   },
 });
