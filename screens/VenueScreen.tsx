@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { 
   View, 
@@ -9,11 +8,12 @@ import {
   StatusBar,
   Alert 
 } from 'react-native';
-import MapView, { Marker } from 'expo-maps';
+import { WebView } from 'react-native-webview';
 import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
 import { theme } from '../theme';
 import { getVenues } from '../data/getVenues';
+import { generateMapHTML, MapBounds } from '../utils/mapTileGenerator';
 
 interface Venue {
   id: string;
@@ -27,12 +27,7 @@ interface Venue {
 export default function VenueScreen() {
   const [venues, setVenues] = useState<Venue[]>([]);
   const [loading, setLoading] = useState(true);
-  const [mapRegion, setMapRegion] = useState({
-    latitude: 37.78825,
-    longitude: -122.4324,
-    latitudeDelta: 0.0922,
-    longitudeDelta: 0.0421,
-  });
+  const [mapHTML, setMapHTML] = useState<string>('');
 
   useEffect(() => {
     loadVenues();
@@ -42,32 +37,32 @@ export default function VenueScreen() {
     try {
       const venueData = await getVenues();
       setVenues(venueData);
-      
-      // Calculate map region to fit all venues
+
+      // Generate map HTML
       if (venueData.length > 0) {
         const venuesWithCoords = venueData.filter(v => v.latitude && v.longitude);
-        
+
         if (venuesWithCoords.length > 0) {
-          const latitudes = venuesWithCoords.map(v => v.latitude);
-          const longitudes = venuesWithCoords.map(v => v.longitude);
-          
+          const latitudes = venuesWithCoords.map(v => v.latitude!);
+          const longitudes = venuesWithCoords.map(v => v.longitude!);
+
           const minLat = Math.min(...latitudes);
           const maxLat = Math.max(...latitudes);
           const minLng = Math.min(...longitudes);
           const maxLng = Math.max(...longitudes);
-          
+
           const centerLat = (minLat + maxLat) / 2;
           const centerLng = (minLng + maxLng) / 2;
-          
-          const latDelta = Math.max((maxLat - minLat) * 1.5, 0.01);
-          const lngDelta = Math.max((maxLng - minLng) * 1.5, 0.01);
-          
-          setMapRegion({
-            latitude: centerLat,
-            longitude: centerLng,
-            latitudeDelta: latDelta,
-            longitudeDelta: lngDelta,
-          });
+
+          const bounds: MapBounds = {
+            north: maxLat,
+            south: minLat,
+            east: maxLng,
+            west: minLng
+          };
+
+          const html = generateMapHTML(venuesWithCoords, bounds, centerLat, centerLng);
+          setMapHTML(html);
         }
       }
     } catch (error) {
@@ -76,14 +71,6 @@ export default function VenueScreen() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const onMarkerPress = (venue: Venue) => {
-    Alert.alert(
-      venue.name,
-      venue.address || venue.description || 'No additional information available',
-      [{ text: 'OK' }]
-    );
   };
 
   if (loading) {
@@ -123,34 +110,24 @@ export default function VenueScreen() {
 
           {/* Map Container */}
           <View style={styles.mapContainer}>
-            {venuesWithCoords.length > 0 ? (
-              <MapView
-                style={styles.map}
-                region={mapRegion}
-                showsUserLocation={false}
-                mapType="standard"
-              >
-                {venuesWithCoords.map((venue) => (
-                  <Marker
-                    key={venue.id}
-                    coordinate={{
-                      latitude: venue.latitude!,
-                      longitude: venue.longitude!,
-                    }}
-                    title={venue.name}
-                    description={venue.address || venue.description}
-                    onPress={() => onMarkerPress(venue)}
-                  >
-                    <View style={styles.markerContainer}>
-                      <Ionicons 
-                        name="location" 
-                        size={30} 
-                        color={theme.colors.accent} 
-                      />
-                    </View>
-                  </Marker>
-                ))}
-              </MapView>
+            {venuesWithCoords.length > 0 && mapHTML ? (
+              <WebView
+                source={{ html: mapHTML }}
+                style={styles.webview}
+                onError={(error) => {
+                  console.error('WebView error:', error);
+                  Alert.alert('Map Error', 'Failed to load map');
+                }}
+                javaScriptEnabled={true}
+                domStorageEnabled={true}
+                startInLoadingState={true}
+                renderLoading={() => (
+                  <View style={styles.webviewLoading}>
+                    <ActivityIndicator size="large" color={theme.colors.primary} />
+                    <Text style={styles.loadingText}>Loading map...</Text>
+                  </View>
+                )}
+              />
             ) : (
               <View style={styles.noDataContainer}>
                 <Ionicons name="map-outline" size={64} color={theme.colors.muted} />
@@ -207,23 +184,18 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: theme.colors.background,
   },
-  map: {
+  webview: {
     flex: 1,
   },
-  markerContainer: {
-    alignItems: 'center',
+  webviewLoading: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     justifyContent: 'center',
-    width: 40,
-    height: 40,
-    backgroundColor: 'white',
-    borderRadius: 20,
-    borderWidth: 2,
-    borderColor: theme.colors.accent,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 5,
+    alignItems: 'center',
+    backgroundColor: theme.colors.background,
   },
   noDataContainer: {
     flex: 1,
