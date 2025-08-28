@@ -90,6 +90,24 @@ export default function ScheduleView() {
       .then(([sched, vens]) => {
         setSchedule(sched);
         setVenues(vens);
+        
+        // Auto-focus current day tab if it exists
+        const days = Array.from(new Set(sched.map((item) => item.dategroupby)))
+          .filter((d) => !isNaN(new Date(d).getTime()))
+          .sort();
+        
+        const today = new Date();
+        const todayString = today.toISOString().split('T')[0]; // YYYY-MM-DD format
+        
+        // Find if today matches any day in the schedule
+        const todayIndex = days.findIndex(day => {
+          const dayDate = new Date(day);
+          return dayDate.toISOString().split('T')[0] === todayString;
+        });
+        
+        if (todayIndex !== -1) {
+          setSelectedDayIdx(todayIndex);
+        }
       })
       .catch(console.error)
       .finally(() => setLoading(false));
