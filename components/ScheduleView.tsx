@@ -445,7 +445,8 @@ const styles = StyleSheet.create({
   hourHeader: {
     height: 50,
     justifyContent: "center",
-    alignItems: "center",
+    alignItems: "flex-start",
+    paddingLeft: 8,
     borderRightWidth: 1,
     borderRightColor: "#ddd",
     backgroundColor: theme.colors.background,
