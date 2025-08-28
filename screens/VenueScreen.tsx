@@ -9,7 +9,7 @@ import {
   StatusBar,
   Alert 
 } from 'react-native';
-import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import MapView, { Marker } from 'react-native-maps';
 import { Ionicons } from '@expo/vector-icons';
 import { theme } from '../theme';
 import { getVenues } from '../data/getVenues';
@@ -125,7 +125,6 @@ export default function VenueScreen() {
             {venuesWithCoords.length > 0 ? (
               <MapView
                 style={styles.map}
-                provider={PROVIDER_GOOGLE}
                 region={mapRegion}
                 showsUserLocation={true}
                 showsMyLocationButton={true}
