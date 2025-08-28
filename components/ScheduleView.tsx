@@ -32,11 +32,9 @@ const formatEventTime = (timeStr: string) => {
     if (isNaN(dt.getTime())) {
       return timeStr; // Return original if invalid
     }
-    return dt.toLocaleTimeString([], { 
-      hour: '2-digit', 
-      minute: '2-digit',
-      hour12: false 
-    });
+    const hours = dt.getHours().toString().padStart(2, '0');
+    const minutes = dt.getMinutes().toString().padStart(2, '0');
+    return `${hours}:${minutes}`;
   } catch (error) {
     return timeStr;
   }
@@ -351,6 +349,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 20,
     borderBottomLeftRadius: 0,
     borderBottomRightRadius: 0,
+    marginBottom: -1, // Overlap to remove gap
   },
   tabText: { 
     color: 'rgba(255,255,255,0.7)', 
@@ -367,7 +366,7 @@ const styles = StyleSheet.create({
   scheduleContainer: {
     flex: 1,
     backgroundColor: theme.colors.background,
-    marginTop: 0,
+    marginTop: -1, // Remove any gap
   },
 
   // Time Header
@@ -380,7 +379,7 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   venueColumnHeader: {
-    height: 40,
+    height: 50,
     backgroundColor: theme.colors.background,
     borderRightWidth: 1,
     borderRightColor: '#ddd',
@@ -390,10 +389,10 @@ const styles = StyleSheet.create({
   },
   timeHeaderRow: {
     flexDirection: 'row',
-    height: 40,
+    height: 50,
   },
   hourHeader: {
-    height: 40,
+    height: 50,
     justifyContent: 'center',
     alignItems: 'center',
     borderRightWidth: 1,
@@ -401,8 +400,8 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.background,
   },
   hourHeaderText: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: 14,
+    fontWeight: '700',
     color: theme.colors.text,
   },
 
