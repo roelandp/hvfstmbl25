@@ -13,7 +13,7 @@ import { getSchedule } from "../data/getSchedule";
 import { getVenues } from "../data/getVenues";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-const QUARTER_WIDTH = 40;
+const QUARTER_WIDTH = 80;
 const HOUR_WIDTH = QUARTER_WIDTH * 4;
 const VENUE_COL_WIDTH = 120;
 const SCREEN_WIDTH = Dimensions.get("window").width;
@@ -518,9 +518,9 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   gridLineQuarter: {
-    backgroundColor: "#eee",
+    backgroundColor: "#ccc",
     width: 1,
-    opacity: 0.3,
+    opacity: 0.5,
   },
   gridLineHorizontal: {
     position: "absolute",
