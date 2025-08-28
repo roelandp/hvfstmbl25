@@ -27,14 +27,31 @@ const getOffset = (timeStr: string, firstHour: number) => {
 
 const formatEventTime = (timeStr: string) => {
   try {
-    const dt = new Date(timeStr);
-    if (isNaN(dt.getTime())) {
-      return timeStr; // Return original if invalid
+    // First try parsing as-is
+    let dt = new Date(timeStr);
+
+    // If that fails and it looks like MM/DD/YYYY format, try explicit parsing
+    if (isNaN(dt.getTime()) && timeStr.includes('/')) {
+      // Handle MM/DD/YYYY HH:mm:ss format explicitly
+      const parts = timeStr.split(' ');
+      if (parts.length === 2) {
+        const [datePart, timePart] = parts;
+        const [month, day, year] = datePart.split('/');
+        const [hours, minutes, seconds] = timePart.split(':');
+        dt = new Date(parseInt(year), parseInt(month) - 1, parseInt(day), parseInt(hours), parseInt(minutes), parseInt(seconds));
+      }
     }
+
+    if (isNaN(dt.getTime())) {
+      console.warn('Failed to parse time:', timeStr);
+      return timeStr; // Return original if still invalid
+    }
+
     const hours = dt.getHours().toString().padStart(2, "0");
     const minutes = dt.getMinutes().toString().padStart(2, "0");
     return `${hours}:${minutes}`;
   } catch (error) {
+    console.warn('Error parsing time:', timeStr, error);
     return timeStr;
   }
 };
