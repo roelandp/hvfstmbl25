@@ -10,6 +10,7 @@ import {
   Alert 
 } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
+import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
 import { theme } from '../theme';
 import { getVenues } from '../data/getVenues';
@@ -126,10 +127,7 @@ export default function VenueScreen() {
               <MapView
                 style={styles.map}
                 region={mapRegion}
-                showsUserLocation={true}
-                showsMyLocationButton={true}
-                showsCompass={true}
-                showsScale={true}
+                showsUserLocation={false}
                 mapType="standard"
               >
                 {venuesWithCoords.map((venue) => (
