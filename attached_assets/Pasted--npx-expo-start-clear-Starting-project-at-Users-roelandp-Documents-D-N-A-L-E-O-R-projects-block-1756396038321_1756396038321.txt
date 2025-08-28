@@ -1,0 +1,15 @@
+$: npx expo start --clear
+Starting project at /Users/roelandp/Documents/D N A L E O R/projects/blockchain/hf25/hf25mobile
+PluginError: Failed to resolve plugin for module "expo-maps" relative to "/Users/roelandp/Documents/D N A L E O R/projects/blockchain/hf25/hf25mobile". Do you have node modules installed?
+PluginError: Failed to resolve plugin for module "expo-maps" relative to "/Users/roelandp/Documents/D N A L E O R/projects/blockchain/hf25/hf25mobile". Do you have node modules installed?
+    at resolvePluginForModule (/Users/roelandp/Documents/D N A L E O R/projects/blockchain/hf25/hf25mobile/node_modules/@expo/config-plugins/build/utils/plugin-resolver.js:96:9)
+    at resolveConfigPluginFunctionWithInfo (/Users/roelandp/Documents/D N A L E O R/projects/blockchain/hf25/hf25mobile/node_modules/@expo/config-plugins/build/utils/plugin-resolver.js:145:7)
+    at resolveConfigPluginFunction (/Users/roelandp/Documents/D N A L E O R/projects/blockchain/hf25/hf25mobile/node_modules/@expo/config-plugins/build/utils/plugin-resolver.js:136:7)
+    at withStaticPlugin (/Users/roelandp/Documents/D N A L E O R/projects/blockchain/hf25/hf25mobile/node_modules/@expo/config-plugins/build/plugins/withStaticPlugin.js:85:70)
+    at /Users/roelandp/Documents/D N A L E O R/projects/blockchain/hf25/hf25mobile/node_modules/@expo/config-plugins/build/plugins/withPlugins.js:30:84
+    at Array.reduce (<anonymous>)
+    at withPlugins (/Users/roelandp/Documents/D N A L E O R/projects/blockchain/hf25/hf25mobile/node_modules/@expo/config-plugins/build/plugins/withPlugins.js:30:18)
+    at withConfigPlugins (/Users/roelandp/Documents/D N A L E O R/projects/blockchain/hf25/hf25mobile/node_modules/@expo/config/build/plugins/withConfigPlugins.js:35:47)
+    at fillAndReturnConfig (/Users/roelandp/Documents/D N A L E O R/projects/blockchain/hf25/hf25mobile/node_modules/@expo/config/build/Config.js:236:78)
+    at getConfig (/Users/roelandp/Documents/D N A L E O R/projects/blockchain/hf25/hf25mobile/node_modules/@expo/config/build/Config.js:293:10)
+$:
