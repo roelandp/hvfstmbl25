@@ -104,10 +104,7 @@ export default function ScheduleView() {
   const dayItems = schedule.filter((item) => item.dategroupby === activeDay);
   const venueIds = Array.from(new Set(dayItems.map((i) => i.venue)));
   const firstHour = 7;
-  const lastHour = Math.max(
-    24,
-    ...dayItems.map((i) => new Date(i.timeend).getHours() + 1),
-  );
+  const lastHour = 24;
 
   useEffect(() => {
     if (firstHour === 0 && lastHour === 0) return;
@@ -252,6 +249,7 @@ export default function ScheduleView() {
               style={styles.scheduleScroll}
               ref={scrollRef}
               showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ width: totalWidth }}
               onScroll={(event) => {
                 const { x } = event.nativeEvent.contentOffset;
                 headerScrollRef.current?.scrollTo({ x, animated: false });
@@ -270,6 +268,7 @@ export default function ScheduleView() {
                   {Array.from({ length: totalQuarters + 1 }).map((_, idx) => {
                     const isHourLine = idx % 4 === 0;
                     const isHalfHourLine = idx % 2 === 0 && !isHourLine;
+                    const isQuarterLine = idx % 1 === 0 && !isHalfHourLine && !isHourLine;
                     return (
                       <View
                         key={idx}
@@ -278,6 +277,7 @@ export default function ScheduleView() {
                           { left: idx * QUARTER_WIDTH },
                           isHourLine && styles.gridLineHour,
                           isHalfHourLine && styles.gridLineHalfHour,
+                          isQuarterLine && styles.gridLineQuarter,
                         ]}
                       />
                     );
@@ -516,6 +516,11 @@ const styles = StyleSheet.create({
     backgroundColor: "#ccc",
     width: 1,
     opacity: 0.5,
+  },
+  gridLineQuarter: {
+    backgroundColor: "#eee",
+    width: 1,
+    opacity: 0.3,
   },
   gridLineHorizontal: {
     position: "absolute",
