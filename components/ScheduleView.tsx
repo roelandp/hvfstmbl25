@@ -20,7 +20,26 @@ const SCREEN_WIDTH = Dimensions.get("window").width;
 const ROW_HEIGHT = 80;
 
 const getOffset = (timeStr: string, firstHour: number) => {
-  const dt = new Date(timeStr);
+  // First try parsing as-is
+  let dt = new Date(timeStr);
+
+  // If that fails and it looks like MM/DD/YYYY format, try explicit parsing
+  if (isNaN(dt.getTime()) && timeStr.includes('/')) {
+    // Handle MM/DD/YYYY HH:mm:ss format explicitly
+    const parts = timeStr.split(' ');
+    if (parts.length === 2) {
+      const [datePart, timePart] = parts;
+      const [month, day, year] = datePart.split('/');
+      const [hours, minutes, seconds] = timePart.split(':');
+      dt = new Date(parseInt(year), parseInt(month) - 1, parseInt(day), parseInt(hours), parseInt(minutes), parseInt(seconds));
+    }
+  }
+
+  if (isNaN(dt.getTime())) {
+    console.warn('Failed to parse time in getOffset:', timeStr);
+    return 0; // Return 0 if parsing fails
+  }
+
   const minutes = dt.getHours() * 60 + dt.getMinutes();
   return ((minutes - firstHour * 60) / 15) * QUARTER_WIDTH;
 };
