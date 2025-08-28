@@ -22,6 +22,7 @@ interface Venue {
   longitude?: number;
   address?: string;
   description?: string;
+  Coordinates?: string;
 }
 
 export default function VenueScreen() {
@@ -36,11 +37,27 @@ export default function VenueScreen() {
   const loadVenues = async () => {
     try {
       const venueData = await getVenues();
-      setVenues(venueData);
+      
+      // Parse coordinates from the Coordinates field
+      const parsedVenues = venueData.map(venue => {
+        if (venue.Coordinates && typeof venue.Coordinates === 'string') {
+          const coords = venue.Coordinates.split(',').map(c => parseFloat(c.trim()));
+          if (coords.length === 2 && !isNaN(coords[0]) && !isNaN(coords[1])) {
+            return {
+              ...venue,
+              latitude: coords[0],
+              longitude: coords[1]
+            };
+          }
+        }
+        return venue;
+      });
+      
+      setVenues(parsedVenues);
 
       // Generate map HTML
-      if (venueData.length > 0) {
-        const venuesWithCoords = venueData.filter(v => v.latitude && v.longitude);
+      if (parsedVenues.length > 0) {
+        const venuesWithCoords = parsedVenues.filter(v => v.latitude && v.longitude);
 
         if (venuesWithCoords.length > 0) {
           const latitudes = venuesWithCoords.map(v => v.latitude!);
