@@ -26,6 +26,22 @@ const getOffset = (timeStr: string, firstHour: number) => {
   return ((minutes - firstHour * 60) / 15) * QUARTER_WIDTH;
 };
 
+const formatEventTime = (timeStr: string) => {
+  try {
+    const dt = new Date(timeStr);
+    if (isNaN(dt.getTime())) {
+      return timeStr; // Return original if invalid
+    }
+    return dt.toLocaleTimeString([], { 
+      hour: '2-digit', 
+      minute: '2-digit',
+      hour12: false 
+    });
+  } catch (error) {
+    return timeStr;
+  }
+};
+
 export default function ScheduleView() {
   const insets = useSafeAreaInsets();
   const scrollRef = useRef<ScrollView>(null);
@@ -158,7 +174,7 @@ export default function ScheduleView() {
                 {hours.map((hour, idx) => (
                   <View key={hour} style={[styles.hourHeader, { width: HOUR_WIDTH }]}>
                     <Text style={styles.hourHeaderText}>
-                      {hour}:00
+                      {hour.toString().padStart(2, '0')}:00
                     </Text>
                   </View>
                 ))}
@@ -192,16 +208,18 @@ export default function ScheduleView() {
               <View style={[styles.scheduleGrid, { width: totalWidth }]}>
                 {/* Background Grid Lines */}
                 <View style={[styles.gridBackground, { width: totalWidth, height: venueIds.length * ROW_HEIGHT }]}>
-                  {/* Vertical lines for quarters and hours */}
+                  {/* Vertical lines for 15-minute intervals and hours */}
                   {Array.from({ length: totalQuarters + 1 }).map((_, idx) => {
                     const isHourLine = idx % 4 === 0;
+                    const isHalfHourLine = idx % 2 === 0 && !isHourLine;
                     return (
                       <View 
                         key={idx} 
                         style={[
                           styles.gridLineVertical, 
                           { left: idx * QUARTER_WIDTH },
-                          isHourLine && styles.gridLineHour
+                          isHourLine && styles.gridLineHour,
+                          isHalfHourLine && styles.gridLineHalfHour
                         ]} 
                       />
                     );
@@ -256,13 +274,7 @@ export default function ScheduleView() {
                               {item.title}
                             </Text>
                             <Text style={styles.eventTime}>
-                              {new Date(item.timestart).toLocaleTimeString([], { 
-                                hour: '2-digit', 
-                                minute: '2-digit' 
-                              })} - {new Date(item.timeend).toLocaleTimeString([], { 
-                                hour: '2-digit', 
-                                minute: '2-digit' 
-                              })}
+                              {formatEventTime(item.timestart)} - {formatEventTime(item.timeend)}
                             </Text>
                           </View>
                         );
@@ -313,8 +325,6 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 16,
     marginTop: 0,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.primary,
   },
   tab: {
     paddingHorizontal: 16,
@@ -322,11 +332,17 @@ const styles = StyleSheet.create({
     marginHorizontal: 4,
     backgroundColor: 'transparent',
     borderRadius: 20,
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
     minWidth: 60,
     alignItems: 'center',
   },
   tabActive: { 
     backgroundColor: theme.colors.background,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
   },
   tabText: { 
     color: 'rgba(255,255,255,0.7)', 
@@ -434,6 +450,11 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.primary,
     width: 2,
     opacity: 0.3,
+  },
+  gridLineHalfHour: {
+    backgroundColor: '#ccc',
+    width: 1,
+    opacity: 0.5,
   },
   gridLineHorizontal: {
     position: 'absolute',
