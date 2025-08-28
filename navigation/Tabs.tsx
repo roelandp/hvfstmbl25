@@ -2,7 +2,7 @@ import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import { Platform } from 'react-native';
-import ProgramScreen from '../screens/ProgramScreen';
+import ProgramStack from './ProgramStack';
 import VenueScreen from '../screens/VenueScreen';
 import SightseeingScreen from '../screens/SightseeingScreen';
 import AudioTourScreen from '../screens/AudioTourScreen';
@@ -37,7 +37,7 @@ export default function Tabs() {
     >
       <Tab.Screen
         name="Program"
-        component={ProgramScreen}
+        component={ProgramStack}
         options={{
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="calendar-outline" color={color} size={size} />

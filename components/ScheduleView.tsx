@@ -8,6 +8,7 @@ import {
   Dimensions,
   ActivityIndicator,
 } from "react-native";
+import { useNavigation } from "@react-navigation/native";
 import { theme } from "../theme";
 import { getSchedule } from "../data/getSchedule";
 import { getVenues } from "../data/getVenues";
@@ -76,6 +77,7 @@ const formatEventTime = (timeStr: string) => {
 };
 
 export default function ScheduleView() {
+  const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const scrollRef = useRef<ScrollView>(null);
   const headerScrollRef = useRef<ScrollView>(null);
@@ -333,7 +335,7 @@ export default function ScheduleView() {
                         const width = Math.max(right - left, 60); // Minimum width for readability
 
                         return (
-                          <View
+                          <TouchableOpacity
                             key={iidx}
                             style={[
                               styles.eventBlock,
@@ -345,6 +347,8 @@ export default function ScheduleView() {
                                 top: 4,
                               },
                             ]}
+                            onPress={() => navigation.navigate('ProgramDetail', { item })}
+                            activeOpacity={0.8}
                           >
                             <Text style={styles.eventTitle} numberOfLines={2}>
                               {item.title}
@@ -353,7 +357,7 @@ export default function ScheduleView() {
                               {formatEventTime(item.timestart)} -{" "}
                               {formatEventTime(item.timeend)}
                             </Text>
-                          </View>
+                          </TouchableOpacity>
                         );
                       })}
                   </View>
