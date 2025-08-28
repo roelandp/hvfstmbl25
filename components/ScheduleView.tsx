@@ -45,6 +45,7 @@ const formatEventTime = (timeStr: string) => {
 export default function ScheduleView() {
   const insets = useSafeAreaInsets();
   const scrollRef = useRef<ScrollView>(null);
+  const headerScrollRef = useRef<ScrollView>(null);
   const [schedule, setSchedule] = useState<any[]>([]);
   const [venues, setVenues] = useState<any[]>([]);
   const [selectedDayIdx, setSelectedDayIdx] = useState(0);
@@ -167,6 +168,7 @@ export default function ScheduleView() {
             <ScrollView 
               horizontal 
               style={styles.timeHeaderScroll}
+              ref={headerScrollRef}
               scrollEnabled={false}
               showsHorizontalScrollIndicator={false}
             >
@@ -204,6 +206,11 @@ export default function ScheduleView() {
               style={styles.scheduleScroll}
               ref={scrollRef}
               showsHorizontalScrollIndicator={false}
+              onScroll={(event) => {
+                const { x } = event.nativeEvent.contentOffset;
+                headerScrollRef.current?.scrollTo({ x, animated: false });
+              }}
+              scrollEventThrottle={16}
             >
               <View style={[styles.scheduleGrid, { width: totalWidth }]}>
                 {/* Background Grid Lines */}
@@ -325,6 +332,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 16,
     marginTop: 0,
+    marginBottom: 0,
   },
   tab: {
     paddingHorizontal: 16,
@@ -359,6 +367,7 @@ const styles = StyleSheet.create({
   scheduleContainer: {
     flex: 1,
     backgroundColor: theme.colors.background,
+    marginTop: 0,
   },
 
   // Time Header
@@ -367,6 +376,8 @@ const styles = StyleSheet.create({
     borderBottomWidth: 2,
     borderBottomColor: theme.colors.primary,
     backgroundColor: theme.colors.background,
+    zIndex: 10,
+    elevation: 3,
   },
   venueColumnHeader: {
     height: 40,
