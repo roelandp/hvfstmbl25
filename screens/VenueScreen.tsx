@@ -9,7 +9,7 @@ import {
   StatusBar,
   Alert 
 } from 'react-native';
-import MapView, { Marker } from 'react-native-maps';
+import MapView, { Marker } from 'expo-maps';
 import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
 import { theme } from '../theme';
