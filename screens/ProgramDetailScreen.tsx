@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -12,9 +12,17 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { theme } from '../theme';
+import { getVenues } from '../data/getVenues';
 
 export default function ProgramDetailScreen({ route, navigation }: any) {
   const { item } = route.params;
+  const [venues, setVenues] = useState<any[]>([]);
+
+  useEffect(() => {
+    getVenues()
+      .then(setVenues)
+      .catch(console.error);
+  }, []);
 
   const formatTime = (timeStr: string) => {
     try {
@@ -75,6 +83,11 @@ export default function ProgramDetailScreen({ route, navigation }: any) {
     }
   };
 
+  const getVenueName = (venueId: string) => {
+    const venue = venues.find(v => v.id === venueId);
+    return venue ? venue.name : venueId;
+  };
+
   const speakers = item.users ? item.users.split(',').filter((s: string) => s.trim()) : [];
   const urls = item.url ? item.url.split(',').filter((u: string) => u.trim()) : [];
 
@@ -128,7 +141,7 @@ export default function ProgramDetailScreen({ route, navigation }: any) {
               {item.venue && (
                 <View style={styles.infoRow}>
                   <Ionicons name="location-outline" size={18} color={theme.colors.accent} />
-                  <Text style={styles.infoText}>Venue: {item.venue}</Text>
+                  <Text style={styles.infoText}>Venue: {getVenueName(item.venue)}</Text>
                 </View>
               )}
 
