@@ -135,6 +135,22 @@ export default function VenueScreen() {
                   console.error('WebView error:', error);
                   Alert.alert('Map Error', 'Failed to load map');
                 }}
+                onMessage={(event) => {
+                  try {
+                    const data = JSON.parse(event.nativeEvent.data);
+                    if (data.type === 'venueClick') {
+                      // Navigate to venue detail screen
+                      // For now, show an alert with venue info
+                      Alert.alert(
+                        data.venue.name,
+                        data.venue.address,
+                        [{ text: 'OK' }]
+                      );
+                    }
+                  } catch (error) {
+                    console.error('Error parsing message:', error);
+                  }
+                }}
                 javaScriptEnabled={true}
                 domStorageEnabled={true}
                 startInLoadingState={true}
@@ -144,7 +160,7 @@ export default function VenueScreen() {
                     <Text style={styles.loadingText}>Loading map...</Text>
                   </View>
                 )}
-              />
+              /></>
             ) : (
               <View style={styles.noDataContainer}>
                 <Ionicons name="map-outline" size={64} color={theme.colors.muted} />
@@ -156,12 +172,7 @@ export default function VenueScreen() {
             )}
           </View>
 
-          {/* Venue Count Info */}
-          <View style={styles.infoBar}>
-            <Text style={styles.infoText}>
-              {venuesWithCoords.length} of {venues.length} venues shown on map
-            </Text>
-          </View>
+          
         </SafeAreaView>
       </View>
     </>
@@ -237,17 +248,5 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 20,
   },
-  infoBar: {
-    backgroundColor: 'white',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
-  },
-  infoText: {
-    fontSize: 14,
-    fontFamily: theme.fonts.body,
-    color: theme.colors.muted,
-    textAlign: 'center',
-  },
+  
 });

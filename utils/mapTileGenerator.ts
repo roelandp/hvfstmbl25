@@ -60,16 +60,17 @@ export function generateMapHTML(venues: any[], bounds: MapBounds, centerLat: num
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Venue Map</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
     <style>
         body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, sans-serif; }
         #map { height: 100vh; width: 100vw; }
         .custom-marker {
-            background-color: #f27d42;
-            border: 3px solid white;
-            border-radius: 50%;
-            width: 24px;
-            height: 24px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            color: #f27d42;
+            font-size: 24px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         .leaflet-popup-content-wrapper {
             border-radius: 8px;
@@ -93,28 +94,41 @@ export function generateMapHTML(venues: any[], bounds: MapBounds, centerLat: num
         // Initialize map
         const map = L.map('map').setView([${centerLat}, ${centerLng}], 14);
         
-        // Add OpenStreetMap tiles
+        // Add OpenStreetMap tiles with retina support
         L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
-            attribution: '© OpenStreetMap contributors'
+            attribution: '© OpenStreetMap contributors',
+            detectRetina: true
         }).addTo(map);
         
-        // Custom marker icon
+        // Remove zoom controls
+        map.zoomControl.remove();
+        
+        // Custom marker icon using FontAwesome
         const customIcon = L.divIcon({
             className: 'custom-marker',
-            iconSize: [24, 24],
-            iconAnchor: [12, 12],
-            popupAnchor: [0, -12]
+            html: '<i class="fas fa-map-marker-alt"></i>',
+            iconSize: [24, 32],
+            iconAnchor: [12, 32],
+            popupAnchor: [0, -32]
         });
         
         // Add venue markers
         const venues = ${JSON.stringify(venueMarkers)};
-        venues.forEach(venue => {
+        venues.forEach((venue, index) => {
             const marker = L.marker([venue.lat, venue.lng], { icon: customIcon })
                 .bindPopup(\`
                     <div class="popup-title">\${venue.name}</div>
                     <div class="popup-address">\${venue.address}</div>
                 \`)
+                .on('click', function() {
+                    // Send venue click data to React Native
+                    window.ReactNativeWebView && window.ReactNativeWebView.postMessage(JSON.stringify({
+                        type: 'venueClick',
+                        venueIndex: index,
+                        venue: venue
+                    }));
+                })
                 .addTo(map);
         });
         
