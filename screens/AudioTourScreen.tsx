@@ -16,6 +16,9 @@ import { useAudioPlayer, AudioSource, AudioStatus } from 'expo-audio';
 import { theme } from '../theme';
 import { generateAudioTourMapHTML } from '../utils/mapTileGenerator';
 
+// Import setIsAudioActiveAsync from Expo Audio
+import { setIsAudioActiveAsync } from 'expo-av/build/Audio';
+
 interface AudioStop {
   id: string;
   title: string;
@@ -41,6 +44,18 @@ export default function AudioTourScreen() {
 
   useEffect(() => {
     loadAudioStops();
+
+    // Configure audio session for silent mode playback
+    const configureAudio = async () => {
+      try {
+        await setIsAudioActiveAsync(true);
+        console.log('Audio session configured for silent mode playback');
+      } catch (error) {
+        console.warn('Failed to configure audio session:', error);
+      }
+    };
+
+    configureAudio(); // Call the configuration function
 
     // Set up audio player event listeners
     const statusSubscription = player.addListener('playbackStatusUpdate', (status: any) => {
@@ -220,7 +235,7 @@ export default function AudioTourScreen() {
       // Load and play new audio
       await player.replace(audioUri as AudioSource);
       await player.play();
-      
+
       console.log('Audio playback started');
     } catch (error) {
       console.error('Error playing audio:', error);
@@ -373,11 +388,11 @@ export default function AudioTourScreen() {
               <View style={styles.progressContainer}>
                 <Text style={styles.timeText}>{formatTime(currentTime)}</Text>
                 <View style={styles.progressBar}>
-                  <View 
+                  <View
                     style={[
-                      styles.progressFill, 
+                      styles.progressFill,
                       { width: `${duration > 0 ? (currentTime / duration) * 100 : 0}%` }
-                    ]} 
+                    ]}
                   />
                 </View>
                 <Text style={styles.timeText}>{formatTime(duration)}</Text>
