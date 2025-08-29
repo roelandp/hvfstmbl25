@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { Ionicons } from '@expo/vector-icons';
-import { useAudioPlayer, AudioSource } from 'expo-audio';
+import { useAudioPlayer, AudioSource, AudioStatus } from 'expo-audio';
 import { theme } from '../theme';
 import { generateAudioTourMapHTML } from '../utils/mapTileGenerator';
 
@@ -32,6 +32,9 @@ export default function AudioTourScreen() {
   const [mapHTML, setMapHTML] = useState<string>('');
   const [currentStop, setCurrentStop] = useState<AudioStop | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
   const webViewRef = useRef<WebView>(null);
 
   const player = useAudioPlayer();
@@ -39,7 +42,18 @@ export default function AudioTourScreen() {
   useEffect(() => {
     loadAudioStops();
 
+    // Set up audio player event listeners
+    const statusSubscription = player.addListener('playbackStatusUpdate', (status: AudioStatus) => {
+      console.log('Audio status update:', status);
+      if (status.isLoaded) {
+        setIsPlaying(status.isPlaying || false);
+        setCurrentTime(status.positionMillis ? status.positionMillis / 1000 : 0);
+        setDuration(status.durationMillis ? status.durationMillis / 1000 : 0);
+      }
+    });
+
     return () => {
+      statusSubscription?.remove();
       player.pause();
     };
   }, []);
@@ -195,21 +209,35 @@ export default function AudioTourScreen() {
       }
 
       console.log('Attempting to play audio for stop:', stop.id);
+      console.log('Audio URI:', audioUri);
 
-      // Load and play audio
-      player.replace(audioUri as AudioSource);
-      player.play();
+      // Stop current audio if playing
+      if (player.playing) {
+        await player.pause();
+      }
+
+      // Load and play new audio
+      await player.replace(audioUri as AudioSource);
+      await player.play();
+      
+      console.log('Audio playback started');
     } catch (error) {
       console.error('Error playing audio:', error);
-      Alert.alert('Audio Error', `Could not play audio for stop ${stop.id}. Audio file may not exist.`);
+      Alert.alert('Audio Error', `Could not play audio for stop ${stop.id}: ${error.message}`);
     }
   };
 
-  const togglePlayPause = () => {
-    if (player.playing) {
-      player.pause();
-    } else {
-      player.play();
+  const togglePlayPause = async () => {
+    try {
+      if (isPlaying) {
+        await player.pause();
+        console.log('Audio paused');
+      } else {
+        await player.play();
+        console.log('Audio resumed');
+      }
+    } catch (error) {
+      console.error('Error toggling playback:', error);
     }
   };
 
@@ -329,7 +357,7 @@ export default function AudioTourScreen() {
                 </TouchableOpacity>
 
                 <TouchableOpacity style={styles.playButton} onPress={togglePlayPause}>
-                  <Ionicons name={player.playing ? 'pause' : 'play'} size={32} color="white" />
+                  <Ionicons name={isPlaying ? 'pause' : 'play'} size={32} color="white" />
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -342,16 +370,16 @@ export default function AudioTourScreen() {
               </View>
 
               <View style={styles.progressContainer}>
-                <Text style={styles.timeText}>{formatTime(player.currentTime || 0)}</Text>
+                <Text style={styles.timeText}>{formatTime(currentTime)}</Text>
                 <View style={styles.progressBar}>
                   <View 
                     style={[
                       styles.progressFill, 
-                      { width: `${player.duration > 0 ? ((player.currentTime || 0) / player.duration) * 100 : 0}%` }
+                      { width: `${duration > 0 ? (currentTime / duration) * 100 : 0}%` }
                     ]} 
                   />
                 </View>
-                <Text style={styles.timeText}>{formatTime(player.duration || 0)}</Text>
+                <Text style={styles.timeText}>{formatTime(duration)}</Text>
               </View>
             </View>
           )}
