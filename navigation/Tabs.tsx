@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Platform } from 'react-native';
 import ProgramStack from './ProgramStack';
 import VenueStack from './VenueStack';
-import SightseeingScreen from '../screens/SightseeingScreen';
+import SightseeingStack from './SightseeingStack';
 import AudioTourScreen from '../screens/AudioTourScreen';
 import ConnectScreen from '../screens/ConnectScreen';
 
@@ -55,7 +55,7 @@ export default function Tabs() {
       />
       <Tab.Screen
         name="Sightseeing"
-        component={SightseeingScreen}
+        component={SightseeingStack}
         options={{
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="map-outline" color={color} size={size} />
