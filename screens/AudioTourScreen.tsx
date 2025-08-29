@@ -118,6 +118,17 @@ export default function AudioTourScreen() {
     setMapHTML(html);
   };
 
+  // Static mapping of audio files for require()
+  const audioFiles: { [key: string]: any } = {
+    '1': require('../assets/audiotour/1.mp3'),
+    '2': require('../assets/audiotour/2.mp3'),
+    '3': require('../assets/audiotour/3.mp3'),
+    // Add more files as needed
+    // '4': require('../assets/audiotour/4.mp3'),
+    // '5': require('../assets/audiotour/5.mp3'),
+    // ... up to 30
+  };
+
   const playAudio = async (stop: AudioStop) => {
     try {
       setCurrentStop(stop);
@@ -131,8 +142,13 @@ export default function AudioTourScreen() {
         }));
       }
 
-      // Create audio source using require for better compatibility with Expo
-      const audioUri = require(`../assets/audiotour/${stop.id}.mp3`);
+      // Get audio source from static mapping
+      const audioUri = audioFiles[stop.id];
+      if (!audioUri) {
+        Alert.alert('Audio Error', `Audio file for stop ${stop.id} not found.`);
+        return;
+      }
+
       console.log('Attempting to play audio for stop:', stop.id);
 
       // Load and play audio
