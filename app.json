@@ -15,9 +15,13 @@
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
-        "UIBackgroundModes": ["audio"],
+        "UIBackgroundModes": [
+          "audio"
+        ],
         "AVAudioSessionCategory": "AVAudioSessionCategoryPlayback",
-        "AVAudioSessionCategoryOptions": ["AVAudioSessionCategoryOptionMixWithOthers"]
+        "AVAudioSessionCategoryOptions": [
+          "AVAudioSessionCategoryOptionMixWithOthers"
+        ]
       }
     },
     "android": {
@@ -35,7 +39,8 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-font"
+      "expo-font",
+      "expo-audio"
     ]
   }
 }
