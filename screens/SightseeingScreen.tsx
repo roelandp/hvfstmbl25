@@ -42,10 +42,10 @@ export default function SightseeingScreen() {
     try {
       const sightseeingData = await getSightseeing();
       
-      // Parse coordinates from the Coordinates field
+      // Parse coordinates from the coordinates field
       const parsedSightseeing = sightseeingData.map(item => {
-        if (item.Coordinates && typeof item.Coordinates === 'string') {
-          const coords = item.Coordinates.split(',').map(c => parseFloat(c.trim()));
+        if (item.coordinates && typeof item.coordinates === 'string') {
+          const coords = item.coordinates.split(',').map(c => parseFloat(c.trim()));
           if (coords.length === 2 && !isNaN(coords[0]) && !isNaN(coords[1])) {
             return {
               ...item,

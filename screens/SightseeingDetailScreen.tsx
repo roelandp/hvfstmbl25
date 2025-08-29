@@ -24,7 +24,7 @@ interface Sightseeing {
   longitude?: number;
   address?: string;
   description?: string;
-  Coordinates?: string;
+  coordinates?: string;
   img?: string;
   url?: string;
 }
@@ -45,8 +45,8 @@ export default function SightseeingDetailScreen({ route, navigation }: any) {
       
       if (foundSightseeing) {
         // Parse coordinates if they exist
-        if (foundSightseeing.Coordinates && typeof foundSightseeing.Coordinates === 'string') {
-          const coords = foundSightseeing.Coordinates.split(',').map(c => parseFloat(c.trim()));
+        if (foundSightseeing.coordinates && typeof foundSightseeing.coordinates === 'string') {
+          const coords = foundSightseeing.coordinates.split(',').map(c => parseFloat(c.trim()));
           if (coords.length === 2 && !isNaN(coords[0]) && !isNaN(coords[1])) {
             foundSightseeing.latitude = coords[0];
             foundSightseeing.longitude = coords[1];
