@@ -9,6 +9,9 @@ import {
   SafeAreaView,
   StatusBar,
   Alert,
+  Linking,
+  Platform,
+  Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { theme } from '../theme';
@@ -22,6 +25,7 @@ interface Venue {
   address?: string;
   description?: string;
   Coordinates?: string;
+  img?: string;
 }
 
 export default function VenueDetailScreen({ route, navigation }: any) {
@@ -57,17 +61,54 @@ export default function VenueDetailScreen({ route, navigation }: any) {
     }
   };
 
-  const openMaps = () => {
+  const openMaps = async () => {
     if (venue?.latitude && venue?.longitude) {
-      const url = `https://maps.google.com/maps?q=${venue.latitude},${venue.longitude}`;
-      Alert.alert(
-        'Open in Maps',
-        'Would you like to open this location in your maps app?',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Open', onPress: () => console.log('Open maps:', url) }
+      const lat = venue.latitude;
+      const lng = venue.longitude;
+      const label = encodeURIComponent(venue.name);
+      
+      // Try native maps first, fall back to Google Maps web
+      const schemes = Platform.select({
+        ios: [
+          `maps://app?q=${lat},${lng}`,
+          `http://maps.apple.com/?q=${lat},${lng}&ll=${lat},${lng}`,
+          `https://maps.google.com/maps?q=${lat},${lng}`
+        ],
+        android: [
+          `geo:${lat},${lng}?q=${lat},${lng}(${label})`,
+          `https://maps.google.com/maps?q=${lat},${lng}`
         ]
-      );
+      }) || [`https://maps.google.com/maps?q=${lat},${lng}`];
+
+      for (const url of schemes) {
+        try {
+          const supported = await Linking.canOpenURL(url);
+          if (supported) {
+            await Linking.openURL(url);
+            return;
+          }
+        } catch (error) {
+          console.warn('Failed to open URL:', url, error);
+        }
+      }
+      
+      Alert.alert('Error', 'Unable to open maps application');
+    }
+  };
+
+  const openImage = async () => {
+    if (venue?.img) {
+      try {
+        const supported = await Linking.canOpenURL(venue.img);
+        if (supported) {
+          await Linking.openURL(venue.img);
+        } else {
+          Alert.alert('Error', 'Unable to open image URL');
+        }
+      } catch (error) {
+        console.error('Error opening image:', error);
+        Alert.alert('Error', 'Failed to open image');
+      }
     }
   };
 
@@ -137,6 +178,20 @@ export default function VenueDetailScreen({ route, navigation }: any) {
           <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
             <View style={styles.card}>
               <Text style={styles.venueName}>{venue.name}</Text>
+              
+              {venue.img && (
+                <TouchableOpacity style={styles.imageContainer} onPress={openImage}>
+                  <Image 
+                    source={{ uri: venue.img }} 
+                    style={styles.venueImage}
+                    resizeMode="cover"
+                  />
+                  <View style={styles.imageOverlay}>
+                    <Ionicons name="open-outline" size={24} color="white" />
+                    <Text style={styles.imageOverlayText}>Tap to view full image</Text>
+                  </View>
+                </TouchableOpacity>
+              )}
               
               {venue.address && (
                 <View style={styles.infoSection}>
@@ -299,6 +354,34 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontFamily: theme.fonts.body,
     fontWeight: '600',
+    marginLeft: 8,
+  },
+  imageContainer: {
+    position: 'relative',
+    marginBottom: 20,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  venueImage: {
+    width: '100%',
+    height: 200,
+    backgroundColor: theme.colors.background,
+  },
+  imageOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    padding: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  imageOverlayText: {
+    color: 'white',
+    fontSize: 14,
+    fontFamily: theme.fonts.body,
     marginLeft: 8,
   },
 });
