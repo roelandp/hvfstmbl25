@@ -16,9 +16,6 @@ import { useAudioPlayer, AudioSource, AudioStatus } from 'expo-audio';
 import { theme } from '../theme';
 import { generateAudioTourMapHTML } from '../utils/mapTileGenerator';
 
-// Import setIsAudioActiveAsync from Expo Audio
-import { setIsAudioActiveAsync } from 'expo-av/build/Audio';
-
 interface AudioStop {
   id: string;
   title: string;
@@ -44,18 +41,6 @@ export default function AudioTourScreen() {
 
   useEffect(() => {
     loadAudioStops();
-
-    // Configure audio session for silent mode playback
-    const configureAudio = async () => {
-      try {
-        await setIsAudioActiveAsync(true);
-        console.log('Audio session configured for silent mode playback');
-      } catch (error) {
-        console.warn('Failed to configure audio session:', error);
-      }
-    };
-
-    configureAudio(); // Call the configuration function
 
     // Set up audio player event listeners
     const statusSubscription = player.addListener('playbackStatusUpdate', (status: any) => {
