@@ -26,6 +26,7 @@ interface Venue {
   description?: string;
   Coordinates?: string;
   img?: string;
+  url?: string;
 }
 
 export default function VenueDetailScreen({ route, navigation }: any) {
@@ -112,6 +113,22 @@ export default function VenueDetailScreen({ route, navigation }: any) {
     }
   };
 
+  const openVenueURL = async () => {
+    if (venue?.url) {
+      try {
+        const supported = await Linking.canOpenURL(venue.url);
+        if (supported) {
+          await Linking.openURL(venue.url);
+        } else {
+          Alert.alert('Error', 'Unable to open venue URL');
+        }
+      } catch (error) {
+        console.error('Error opening venue URL:', error);
+        Alert.alert('Error', 'Failed to open venue URL');
+      }
+    }
+  };
+
   if (loading) {
     return (
       <>
@@ -186,10 +203,6 @@ export default function VenueDetailScreen({ route, navigation }: any) {
                     style={styles.venueImage}
                     resizeMode="cover"
                   />
-                  <View style={styles.imageOverlay}>
-                    <Ionicons name="open-outline" size={24} color="white" />
-                    <Text style={styles.imageOverlayText}>Tap to view full image</Text>
-                  </View>
                 </TouchableOpacity>
               )}
               
@@ -214,6 +227,14 @@ export default function VenueDetailScreen({ route, navigation }: any) {
                     {venue.latitude.toFixed(6)}, {venue.longitude.toFixed(6)}
                   </Text>
                 </View>
+              )}
+
+              {venue.url && (
+                <TouchableOpacity style={styles.urlSection} onPress={openVenueURL}>
+                  <Ionicons name="globe-outline" size={20} color={theme.colors.primary} />
+                  <Text style={styles.urlText}>{venue.url}</Text>
+                  <Ionicons name="open-outline" size={16} color={theme.colors.primary} />
+                </TouchableOpacity>
               )}
             </View>
 
@@ -357,7 +378,6 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   imageContainer: {
-    position: 'relative',
     marginBottom: 20,
     borderRadius: 12,
     overflow: 'hidden',
@@ -367,21 +387,22 @@ const styles = StyleSheet.create({
     height: 200,
     backgroundColor: theme.colors.background,
   },
-  imageOverlay: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    padding: 12,
+  urlSection: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    marginBottom: 16,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: theme.colors.background,
+    borderRadius: 8,
   },
-  imageOverlayText: {
-    color: 'white',
-    fontSize: 14,
+  urlText: {
+    flex: 1,
+    fontSize: 16,
     fontFamily: theme.fonts.body,
-    marginLeft: 8,
+    color: theme.colors.primary,
+    marginLeft: 12,
+    marginRight: 8,
+    textDecorationLine: 'underline',
   },
 });
