@@ -13,6 +13,7 @@ import {
 import { WebView } from 'react-native-webview';
 import { Ionicons } from '@expo/vector-icons';
 import { useAudioPlayer, AudioSource, AudioStatus } from 'expo-audio';
+import { Audio } from 'expo-av';
 import { theme } from '../theme';
 import { generateAudioTourMapHTML } from '../utils/mapTileGenerator';
 
@@ -40,6 +41,22 @@ export default function AudioTourScreen() {
   const player = useAudioPlayer();
 
   useEffect(() => {
+    // Configure audio session to play during silent mode
+    const configureAudio = async () => {
+      try {
+        await Audio.setAudioModeAsync({
+          allowsRecordingIOS: false,
+          playsInSilentModeIOS: true,
+          staysActiveInBackground: true,
+          shouldDuckAndroid: true,
+          playThroughEarpieceAndroid: false,
+        });
+      } catch (error) {
+        console.warn('Failed to configure audio session:', error);
+      }
+    };
+    
+    configureAudio();
     loadAudioStops();
 
     // Set up audio player event listeners
