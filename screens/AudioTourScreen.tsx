@@ -46,16 +46,16 @@ export default function AudioTourScreen() {
 
   const loadAudioStops = async () => {
     try {
-      // Use hardcoded CSV data since dynamic imports aren't working well in this environment
-      const csvData = `id,title,script_text,lat,lon
-1,Chan See Shu Yuen Clan Ancestral Hall,"[warmly] As we begin our walk, I'd like to welcome you into the warm embrace of the Chan See Shu Yuen Clan Ancestral Hall. Clan houses were established by Chinese migrants who shared the same surname. They offered a sanctuary where those who spoke the same dialect could share news and lend support. This beautiful building was erected between 1897 and 1906 by four tin miners and a few businessmen, and it is recognised as one of Kuala Lumpur's oldest and most ornate clan houses. The hall was originally created for people with the surnames Chan, Tan or Chen. Imagine the sense of community the newcomers must have felt when they walked through these gates. The materials and craftsmen were imported from southern China, and the structure is still protected as a heritage building. Today the hall functions as a Buddhist temple and opens its doors to visitors from 9 a.m. to 5 p.m. every day. I hope you'll take a moment to appreciate the intricate carvings and the history of this special meeting place where the story of many Chinese families in Kuala Lumpur began.",3.1402646,101.6983076
-2,Chocha Foodstore,"[playfully] At first glance, this building might look like a tired old hotel, but step inside and you'll discover the quirky Chocha Foodstore. This shop is housed in what was once the Mah Lian Hotel, a building dating back to the 1920s that included rooms for a fortune teller, various businesses and even a brothel. The hotel closed long ago, and the structure sat abandoned until architect Shin Chang lovingly restored it. He kept the warren-like layout and the peeling paint to preserve its character and opened Chocha Foodstore in 2016. Today you'll find an unpretentious restaurant on the ground floor serving contemporary farm‑to‑table dishes made with produce grown behind the owner's parents' house. There's a bicycle repair shop beside the dining room, and upstairs the space now houses a bar and a co‑working office for architects. If you can, come back later for dinner – the food here is so good it might give you what I like to call a foodgasm.",3.1408989,101.6980872
-3,Ho Kow Hainam Kopitiam,"[smiling] Now we arrive at one of the city's longest‑standing kopitiams, Ho Kow Hainam Kopitiam. Kopitiam literally means coffee shop – kopi is the Malay word for coffee and tiam means shop in Hokkien. These cafés were created by Hainanese‑Chinese cooks who learned to prepare Western‑style breakfasts for British families. After the colonials left, the cooks opened their own establishments, serving buttered toast with coconut jam, soft‑boiled eggs seasoned with soy sauce and pepper, and a range of traditional Hainanese and Malaysian dishes. Ho Kow was founded in 1956 and originally traded from a tiny shophouse along Lorong Panggung. In 2019 the business moved into this swanky nostalgia‑themed building and gave itself a fresh look. It still draws long queues of locals keen to relive childhood memories, so arrive early if you want to try their kaya toast and kopi.",3.1413323,101.6976873
-4,Central Market,"[enthusiastically] Welcome to Central Market, a cultural landmark that has been the beating heart of Kuala Lumpur since 1888. Originally built as a wet market, this Art Deco building was transformed into a cultural center in 1986. Today it houses over 200 shops selling everything from traditional crafts to contemporary art. The building itself is a testament to Malaysia's multicultural heritage, with its distinctive blue exterior and ornate details. Inside, you'll find batik paintings, pewter works, wood carvings, and traditional textiles from across Malaysia. The market is also home to several restaurants serving authentic Malaysian cuisine. Don't miss the second floor, where you can watch artisans at work and even try your hand at traditional crafts. Central Market is not just a shopping destination; it's a living museum that celebrates the rich cultural diversity of Malaysia.",3.1412,101.6956
-5,Petaling Street,"[excitedly] Now we enter the famous Petaling Street, the heart of Kuala Lumpur's Chinatown! This bustling street market has been a trading hub for over 150 years. During the day, it's a maze of stalls selling everything from fake designer goods to delicious street food. But the real magic happens in the evening when the street comes alive with neon lights and the aroma of sizzling woks. Try the famous char kway teow, fresh fruit juices, and traditional Chinese desserts. The street is also home to several temples, including the beautiful Sri Mahamariamman Temple. Petaling Street represents the entrepreneurial spirit of the Chinese community in Malaysia and offers a sensory overload that captures the essence of multicultural Kuala Lumpur.",3.1416,101.6958
-6,Masjid Jamek,"[respectfully] Here stands the Masjid Jamek, one of the oldest mosques in Kuala Lumpur and a beautiful example of Moorish architecture. Built in 1909 at the confluence of the Klang and Gombak rivers, this mosque marks the birthplace of Kuala Lumpur. The name 'Kuala Lumpur' literally means 'muddy confluence,' referring to this very spot where tin miners first settled. The mosque's striking onion domes and minarets were designed by British architect Arthur Benison Hubback, who drew inspiration from Mughal architecture. The red brick and white trim create a stunning contrast against the blue sky. While the mosque is still an active place of worship, visitors are welcome outside prayer times. This sacred site represents the Islamic heritage of Malaysia and stands as a symbol of religious harmony in this diverse nation.",3.1420,101.6942
-7,Sultan Abdul Samad Building,"[proudly] Behold the magnificent Sultan Abdul Samad Building, one of Kuala Lumpur's most iconic landmarks! This stunning example of Moorish Revival architecture was completed in 1897 and served as the colonial administrative center. The building's most distinctive feature is its 41-meter-high clock tower, which has become a symbol of the city. The copper domes and arched windows reflect the Islamic architectural influence, while the red brick construction shows British colonial preferences. Today, the building houses the Ministry of Heritage, Arts and Culture. The building overlooks Merdeka Square, where Malaysia's independence was declared in 1957. As you admire its grandeur, imagine the significant historical events that have unfolded within these walls and in the square before it.",3.1481,101.6934
-8,Merdeka Square,"[emotionally] We now stand in Merdeka Square, the most historically significant site in Malaysia. It was here, at the stroke of midnight on August 31, 1957, that the Union Jack was lowered and the Malaysian flag was raised for the first time, marking the country's independence from British rule. The word 'Merdeka' means 'independence' in Malay. This large grass field, surrounded by colonial buildings, has witnessed countless national celebrations and important events. The 95-meter flagpole in the center is one of the tallest in the world. Every year on August 31, thousands gather here to celebrate Malaysia's National Day. The square represents the birth of modern Malaysia and the unity of its diverse people. Take a moment to feel the weight of history and the hopes and dreams of a nation that were realized on this very ground.",3.1485,101.6936
+      // Load CSV data from assets
+      const csvAsset = require('../assets/stops_restructured_cleaned.csv');
+      let csvData: string;
+      
+      if (typeof csvAsset === 'string') {
+        csvData = csvAsset;
+      } else {
+        // If it's imported as a module, try to get the default export or text content
+        csvData = csvAsset.default || csvAsset.toString();
+      }
 
       // Parse CSV data
       const lines = csvData.trim().split('\n');
@@ -123,10 +123,33 @@ export default function AudioTourScreen() {
     '1': require('../assets/audiotour/1.mp3'),
     '2': require('../assets/audiotour/2.mp3'),
     '3': require('../assets/audiotour/3.mp3'),
-    // Add more files as needed
-    // '4': require('../assets/audiotour/4.mp3'),
-    // '5': require('../assets/audiotour/5.mp3'),
-    // ... up to 30
+    '4': require('../assets/audiotour/4.mp3'),
+    '5': require('../assets/audiotour/5.mp3'),
+    '6': require('../assets/audiotour/6.mp3'),
+    '7': require('../assets/audiotour/7.mp3'),
+    '8': require('../assets/audiotour/8.mp3'),
+    '9': require('../assets/audiotour/9.mp3'),
+    '10': require('../assets/audiotour/10.mp3'),
+    '11': require('../assets/audiotour/11.mp3'),
+    '12': require('../assets/audiotour/12.mp3'),
+    '13': require('../assets/audiotour/13.mp3'),
+    '14': require('../assets/audiotour/14.mp3'),
+    '15': require('../assets/audiotour/15.mp3'),
+    '16': require('../assets/audiotour/16.mp3'),
+    '17': require('../assets/audiotour/17.mp3'),
+    '18': require('../assets/audiotour/18.mp3'),
+    '19': require('../assets/audiotour/19.mp3'),
+    '20': require('../assets/audiotour/20.mp3'),
+    '21': require('../assets/audiotour/21.mp3'),
+    '22': require('../assets/audiotour/22.mp3'),
+    '23': require('../assets/audiotour/23.mp3'),
+    '24': require('../assets/audiotour/24.mp3'),
+    '25': require('../assets/audiotour/25.mp3'),
+    '26': require('../assets/audiotour/26.mp3'),
+    '27': require('../assets/audiotour/27.mp3'),
+    '28': require('../assets/audiotour/28.mp3'),
+    '29': require('../assets/audiotour/29.mp3'),
+    '30': require('../assets/audiotour/30.mp3'),
   };
 
   const playAudio = async (stop: AudioStop) => {
@@ -145,7 +168,7 @@ export default function AudioTourScreen() {
       // Get audio source from static mapping
       const audioUri = audioFiles[stop.id];
       if (!audioUri) {
-        Alert.alert('Audio Error', `Audio file for stop ${stop.id} not found.`);
+        Alert.alert('Audio Error', 'Audio file for stop ' + stop.id + ' not found.');
         return;
       }
 
