@@ -43,12 +43,13 @@ export default function AudioTourScreen() {
     loadAudioStops();
 
     // Set up audio player event listeners
-    const statusSubscription = player.addListener('playbackStatusUpdate', (status: AudioStatus) => {
+    const statusSubscription = player.addListener('playbackStatusUpdate', (status: any) => {
       console.log('Audio status update:', status);
       if (status.isLoaded) {
-        setIsPlaying(status.isPlaying || false);
-        setCurrentTime(status.positionMillis ? status.positionMillis / 1000 : 0);
-        setDuration(status.durationMillis ? status.durationMillis / 1000 : 0);
+        // expo-audio uses different property names
+        setIsPlaying(status.playing || false);
+        setCurrentTime(status.currentTime || 0);
+        setDuration(status.duration || 0);
       }
     });
 
