@@ -1,15 +1,546 @@
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+
+import React, { useEffect, useState, useRef } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  SafeAreaView,
+  StatusBar,
+  ActivityIndicator,
+  Alert,
+  TouchableOpacity,
+  Dimensions,
+  PanResponder,
+} from 'react-native';
+import { WebView } from 'react-native-webview';
+import { Ionicons } from '@expo/vector-icons';
+import { Audio } from 'expo-av';
+import { theme } from '../theme';
+
+interface AudioStop {
+  id: string;
+  title: string;
+  script_text: string;
+  lat: number;
+  lon: number;
+}
+
+const { width } = Dimensions.get('window');
 
 export default function AudioTourScreen() {
+  const [stops, setStops] = useState<AudioStop[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [mapHTML, setMapHTML] = useState<string>('');
+  const [currentStop, setCurrentStop] = useState<AudioStop | null>(null);
+  const [sound, setSound] = useState<Audio.Sound | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [playbackPosition, setPlaybackPosition] = useState(0);
+  const [playbackDuration, setPlaybackDuration] = useState(0);
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  useEffect(() => {
+    loadAudioStops();
+    setupAudio();
+    
+    return () => {
+      if (sound) {
+        sound.unloadAsync();
+      }
+    };
+  }, []);
+
+  const setupAudio = async () => {
+    await Audio.setAudioModeAsync({
+      allowsRecordingIOS: false,
+      staysActiveInBackground: false,
+      playsInSilentModeIOS: true,
+      shouldDuckAndroid: true,
+      playThroughEarpieceAndroid: false,
+    });
+  };
+
+  const loadAudioStops = async () => {
+    try {
+      // Parse the CSV data
+      const csvData = `id,title,script_text,lat,lon
+1,Chan See Shu Yuen Clan Ancestral Hall,"[warmly] As we begin our walk, I'd like to welcome you into the warm embrace of the Chan See Shu Yuen Clan Ancestral Hall. Clan houses were established by Chinese migrants who shared the same surname. They offered a sanctuary where those who spoke the same dialect could share news and lend support. This beautiful building was erected between 1897 and 1906 by four tin miners and a few businessmen, and it is recognised as one of Kuala Lumpur's oldest and most ornate clan houses. The hall was originally created for people with the surnames Chan, Tan or Chen. Imagine the sense of community the newcomers must have felt when they walked through these gates. The materials and craftsmen were imported from southern China, and the structure is still protected as a heritage building. Today the hall functions as a Buddhist temple and opens its doors to visitors from 9 a.m. to 5 p.m. every day. I hope you'll take a moment to appreciate the intricate carvings and the history of this special meeting place where the story of many Chinese families in Kuala Lumpur began.",3.1402646,101.6983076
+2,Chocha Foodstore,"[playfully] At first glance, this building might look like a tired old hotel, but step inside and you'll discover the quirky Chocha Foodstore. This shop is housed in what was once the Mah Lian Hotel, a building dating back to the 1920s that included rooms for a fortune teller, various businesses and even a brothel. The hotel closed long ago, and the structure sat abandoned until architect Shin Chang lovingly restored it. He kept the warren-like layout and the peeling paint to preserve its character and opened Chocha Foodstore in 2016. Today you'll find an unpretentious restaurant on the ground floor serving contemporary farm‑to‑table dishes made with produce grown behind the owner's parents' house. There's a bicycle repair shop beside the dining room, and upstairs the space now houses a bar and a co‑working office for architects. If you can, come back later for dinner – the food here is so good it might give you what I like to call a foodgasm.",3.1408989,101.6980872
+3,Ho Kow Hainam Kopitiam,"[smiling] Now we arrive at one of the city's longest‑standing kopitiams, Ho Kow Hainam Kopitiam. Kopitiam literally means coffee shop – kopi is the Malay word for coffee and tiam means shop in Hokkien. These cafés were created by Hainanese‑Chinese cooks who learned to prepare Western‑style breakfasts for British families. After the colonials left, the cooks opened their own establishments, serving buttered toast with coconut jam, soft‑boiled eggs seasoned with soy sauce and pepper, and a range of traditional Hainanese and Malaysian dishes. Ho Kow was founded in 1956 and originally traded from a tiny shophouse along Lorong Panggung. In 2019 the business moved into this swanky nostalgia‑themed building and gave itself a fresh look. It still draws long queues of locals keen to relive childhood memories, so arrive early if you want to try their kaya toast and kopi.",3.1413323,101.6976873
+4,"Ali, Muthu & Ah Hock Kopitiam","[cheerfully] This award‑winning kopitiam is special not just for its food, but for the camaraderie behind it. Named after three friends – Ali, Muthu and Ah Hock – who represent Malaysia's Malay, Indian and Chinese communities, the café is a celebration of the country's diversity. The founders kept the rustic décor of the old building to evoke nostalgia. On the menu you'll find Nasi Goreng, Nasi Lemak with fried chicken, Hokkien Mee and a rich chicken rendang. Order a steaming cup of teh tarik, Malaysia's famous 'pulled' tea, to wash down your meal. The staff are happy to explain the dishes, so don't be shy to ask questions.",3.1413989,101.6972928
+5,The Attic Bar,"[whispering] Hidden above the Travel Hub guesthouse, The Attic Bar is a secret speakeasy perfect for a sundowner. To reach it you ring the bell and climb a narrow spiral staircase. The interior is cosy, with bare brick walls and an elegant chandelier fashioned from wooden birdcages. Step onto the balcony for a low‑key view of Kuala Lumpur's skyline. The bar serves artisanal cocktails at surprisingly affordable prices, and although it doesn't open until 6 p.m., I suggest making a mental note to return later – your taste buds will thank you.",3.1414019,101.6972366
+6,Old Post Office,"This Tudor‑style building once operated as a post office. Built around 1911, the post office stood beside today's Kwai Chai Hong and the Sikh temple, serving the community for decades. It later became a traditional kopitiam called Malaya Hainan Restaurant and, according to local folklore, some people claimed to see a phantom lady [mysterious] on the upper floor. The business has since been taken over and rebranded as Station Kopitiam, but the building's black‑and‑white façade still exudes colonial charm. Feel free to peek inside for a coffee – and maybe keep an eye out for ghosts!",3.1414941,101.6968704
+7,Goldsmith Mural,"[thoughtfully] At the end of this row of restored shophouses you'll see a huge mural of an elderly goldsmith at work. Painted in April 2016 by Russian artist Julia Volchkova, it pays homage to the goldsmiths who once plied their trade here. The black‑and‑white artwork depicts the craftsman shaping gold with a hammer, while a modern skyscraper looms in the background. It's the artist's first piece in Kuala Lumpur, and it beautifully contrasts the area's historic trades with the city's rapid development. Take a close look at the tiny painted shophouses beneath the giant building – perhaps you'll spot some familiar landmarks.",3.1416617,101.6971716
+8,Yellow Chinese Shophouses,"[cheerfully] These brightly painted yellow and blue shophouses mark the entrance to Kwai Chai Hong. A group of investors bought ten dilapidated buildings here and decided to restore them as a way to celebrate the area's heritage. The project opened to the public in April 2019 and quickly became a hotspot for murals and art installations. When I first visited, the shop lots were empty, but they're gradually filling with new businesses. Take a closer look at the ornate windows and imagine what life might have been like when families lived upstairs and ran their shops below.",3.1416095,101.6976088
+9,Kwai Chai Hong,"[enthusiastically] Welcome to Kwai Chai Hong, the lovingly restored heritage lane that brings the stories of Chinatown's 1960s settlers to life. Until 2019 this alley was hidden behind a kopitiam and a row of crumbling shophouses. Today it features six evocative murals showing scenes from daily life: a landlady leaning over her balcony, children playing pranks, musicians, calligraphers and even a coquettish lady of the night. QR codes next to each painting offer more details, though you might need a local to translate. The name Kwai Chai Hong means 'Little Ghost Alley' in Cantonese – some say it refers to mischievous kids who played tricks in the lane, while others insist it recalls the shady vices of gambling, prostitution and gangsterism. Which story do you prefer?",3.1415238,101.6976262
+10,'Birds' Street Art,"[lightly] Tucked along the lane is a cheerful mural of two colourful birds. There isn't much published about this artwork, but its bright hues brighten up the alley and make for a fun photo stop. Take a moment to enjoy the playful vibes before we move on.",3.141432,101.6976336
+11,Bubble Bee Cafe,"[gently] If you've got a sweet tooth, Bubble Bee Café is the place to treat yourself. It opened in 2017 as part of the revitalisation of Petaling Street and offers waffles, bubble tea and other desserts in a cosy setting. It's one of the few shops with direct access to Kwai Chai Hong. Why not grab a quick snack before we continue?",3.1417363,101.6978576
+12,Petaling Street,"[narrating] Petaling Street is the beating heart of Kuala Lumpur's Chinatown. In the 19th century the road led to tin mines, and most residents here were Hakka and Cantonese miners. During the Selangor Civil War many buildings were destroyed, but Kapitan Yap Ah Loy persuaded the miners to stay and rebuild. He opened a tapioca mill on the street, which earned it the nickname 'Chee Cheong Kai' or Starch Factory Street. Over time the area evolved into a bustling market lined with stalls selling food, textiles and souvenirs. In 2003 the street underwent a major facelift; archways and a green roof were added and motor vehicles were banned. Today it remains a lively bazaar – feel free to explore, but watch out for counterfeit goods and be ready to bargain.",3.1426039,101.6978695
+13,Sri Maha Mariamman Temple,"[reverently] On your left is the magnificent Sri Maha Mariamman Temple, the oldest Hindu temple in Kuala Lumpur. Founded in 1873 as a private shrine for a prominent Tamil family, it opened to the public in the 1920s and now serves the city's Hindu community. The temple's 23‑metre‑high gopuram (gateway tower) is covered with 228 colourful sculptures of Hindu deities and is an impressive sight. During the annual Thaipusam festival, a silver chariot carrying the statue of the goddess Mariamman departs from here on its pilgrimage to the Batu Caves. Remember to remove your shoes and dress modestly if you wish to enter.",3.143399,101.6964545
+14,Guan Di Temple,"[calmly] The Guan Di Temple dates back to 1888 and honours the Chinese general Guan Di, who is revered as the god of war. Legend says he was a great warrior known for his loyalty and integrity. Local devotees believe that touching the temple's 59‑kilogram 'guan dao' spear or its companion sword brings good luck and protection. Built with donations from the Chinese community, the temple remains a popular place of worship and is open daily from 7 a.m. to 7 p.m. If you arrive early, the air will be filled with fragrant incense – a perfect moment for a quiet prayer or reflection.",3.1440178,101.6966904
+15,Kasturi Walk,"[cheerfully] Just outside Central Market lies Kasturi Walk, a covered pedestrian walkway lined with stalls selling local snacks, souvenirs and handicrafts. It opened in 2011 as a companion to the market and features buskers and street performers who add to the cheerful atmosphere. If you're thirsty, this is a great spot to buy a fresh coconut or sample some kuih (sweet cakes).",3.1449809,101.6957644
+16,Central Market,"[nostalgic] This imposing art‑deco building began life in 1888 as Kuala Lumpur's main wet market. It was expanded several times before the present building was completed in 1937. The market originally sold fresh produce – fish, meat, fruit and vegetables – and it was so lively that British administrator Frank Swettenham once described it as a huge gambling booth filled with noisy crowds. When modern wet markets were built in the suburbs in the 1970s, the council planned to demolish Central Market, but heritage activists saved it. Today it is a heritage centre organised into Malay, Straits Chinese and Little India sections. Inside you'll find batik clothing, handicrafts, artwork and caricature artists. Be sure to explore the annexe at the back for portrait artists and contemporary exhibitions.",3.1452825,101.6954071
+17,OCBC Building,"[informative] Across the road stands an elegant art‑deco structure built in 1937 to house the Kuala Lumpur headquarters of the Oversea Chinese Banking Corporation (OCBC). The bank later moved and the building is now known as Urbanscapes House, used as a creative space for exhibitions and events. Notice the streamlined curves and geometric motifs typical of art‑deco architecture.",3.1467295,101.6960376
+18,Medan Pasar,"[reflectively] Medan Pasar, or Market Square, marks the site of Kuala Lumpur's earliest settlement. Its most striking feature is the art‑deco clock tower built in 1937 to commemorate the coronation of King George VI. Designed by architect Arthur Oakley Coltman, the 25‑foot tower features a sunburst motif and originally displayed a commemorative plaque that was later removed after independence. This square once housed the bustling central market and the home of Yap Ah Loy, the Chinese Kapitan who rebuilt Kuala Lumpur after the civil war. He replaced wooden buildings with brick structures, built roads like Petaling Street and even established a tapioca mill here to encourage miners to stay. Try to imagine the crowds that once gathered to gamble, trade and gossip.",3.1473909,101.6959732
+19,The Birth of KL (view of Masjid Jamek),"[wondering] We've reached the confluence of the Gombak and Klang rivers, the very place where Kuala Lumpur – which translates to 'muddy confluence' – was born. In 1857 a group of 87 Chinese miners sent by Raja Abdullah travelled upriver by boat and landed here because the water was too shallow to continue. They carried weapons, rice, coconut oil and even opium, but only 18 survived the malaria‑infested jungle. After the Selangor Civil War, Kapitan Yap Ah Loy rebuilt the settlement, laid out new roads and set up a tapioca mill to encourage miners to stay. Standing on the riverbank today, you'll see the graceful Masjid Jamek mosque across the water. It's hard to imagine that this muddy confluence has become a modern metropolis in just over 160 years.",3.1482282,101.6959407
+20,Masjid Jamek,"[respectfully] Masjid Jamek was built on the site of an old Malay burial ground at the confluence of the rivers. The foundation stone was laid on 23 March 1908, and the mosque officially opened on 23 December 1909. Designed by British architect Arthur Benison Hubback in an Indo‑Saracenic style, it cost $32,625 and was funded by the local Malay community and the British government. For more than half a century it served as Kuala Lumpur's main mosque until the National Mosque opened in 1965. Its domes and minarets echo Moorish architecture, and although one minaret's dome collapsed in 1993 it has been restored. If you'd like to explore inside, robes and headscarves are available at the entrance, and visitors are welcome outside prayer times.",3.1487881,101.6956711
+21,Former Survey Office,"[concerned] The elegant building in front of you was constructed between 1909 and 1910 to house the Survey Department of the Federated Malay States. Designed by Arthur Benison Hubback, it features a 400‑foot colonnade and two 80‑foot octagonal towers topped with onion domes. In the 1980s the premises were used by the sessions and magistrates courts, but since then the structure has fallen into disrepair. A spire collapsed after heavy rain in 2016 and weeds now sprout from the roof. Despite its shabby state, the building has been gazetted as a heritage site, and we can only hope it will be restored to its former glory.",3.1500102,101.6956053
+22,Old City Hall (Panggung Bandaraya),"[excited] This handsome building, built between 1896 and 1904, originally served as Kuala Lumpur's City Hall and a theatre for plays and concerts. Another creation of Arthur Benison Hubback, it showcases a Moorish facade with domes and arches. In 1992 a major fire gutted the interior, but the city council restored the hall soon after, adding modern seating and sound systems while preserving the exterior. Today it's known as Panggung Bandaraya DBKL, although performances are sporadic. It's worth admiring the facade and imagining the lively dances and operas that once took place here.",3.1503878,101.6950435
+23,Former High Court Building,"[factual] Next is the former Supreme Court, constructed from 1912 to 1915 for $208,500 Straits Dollars. Also designed by Arthur Benison Hubback, it features a double arcade of columns and four domed corner towers. As Kuala Lumpur grew, the high court eventually moved to larger premises, and this building now houses the Ministry of Information, Communications and Culture. Like its neighbours, it requires maintenance to prevent further decay.",3.1500075,101.6947599
+24,Sultan Abdul Samad Building,"[excited] This is arguably Kuala Lumpur's most photogenic colonial building. Constructed between 1894 and 1897 to house government offices, it was designed by A.C. Norman, with contributions from R.A.J. Bidwell and Arthur Benison Hubback, and is clad in red bricks from the Brickfields area. The style blends Indo‑Saracenic and Moorish elements, and the central clock tower rises 41 metres, echoing London's Big Ben. The building originally held various government departments and later served as the High Court and Supreme Court before being renamed in 1974 after Sultan Abdul Samad. Today it houses the Ministry of Communications and Multimedia and the Ministry of Tourism and Culture. Look closely at the striped brickwork known as the 'blood and bandages' style and imagine the amount of upkeep needed to maintain the ornate clock.",3.1487538,101.6944164
+25,Old General Post Office,"[matter-of-fact] Built between 1902 and 1907 at a cost of $100,000 Straits Dollars, this building served as Kuala Lumpur's third General Post Office. The contract had to be completed by contractor Walter Pallister after the original builder failed, and the structure is notable for being the only Mughal‑style building in the city without domes. Postal operations moved elsewhere in 1985, and today the building houses a government office. It was declared a national heritage site in 2007.",3.1477113,101.6942072
+26,National Textile Museum,"[inviting] Next door is the National Textile Museum, housed in an Indo‑Saracenic Revival building designed by Arthur Benison Hubback. Completed in 1905, it originally served as the headquarters for the Federated Malay States Railways and later housed agencies like the Selangor Water Department and the Central Bank. After various tenants came and went, the building was refurbished and opened to the public as a textile museum on 9 January 2010. Inside you can learn about batik production, woodblock printing and fabrics made from pineapple fibre. Admission is inexpensive, and the air conditioning offers a welcome break from the heat!",3.1467579,101.6940249
+27,Old Chartered Bank Building,"[astonished] This cream‑coloured building was opened in December 1909 as the Kuala Lumpur branch of the Chartered Bank of India, Australia and China, the first bank to be established in the city. Rapid business growth led to the commissioning of this three‑storey Indo‑Saracenic building with horseshoe arches and scalloped windows. In 1926 the Klang and Gombak rivers flooded, submerging the bank's basement vault, and millions of dollars in banknotes had to be laid out on the Padang to dry. Over the years the building served as the National History Museum, a district land office and a music museum. It is currently vacant but has been gazetted as a national heritage building.",3.1470653,101.6935989
+28,Old Government Printing Office (City Gallery),"[curiously] On the south side of Merdeka Square stands the Kuala Lumpur City Gallery, housed in the former Government Printing Office. Built in 1899 and designed by British architect A.C. Norman, it produced official government reports, train tickets and other printed materials. The building was later acquired by City Hall and converted into the first public library of Kuala Lumpur in 1986. After refurbishment it reopened as the City Gallery, showcasing a 360‑degree model of Kuala Lumpur, historical photographs and an 'I ❤ KL' sculpture. Pop inside to enjoy the air conditioning and learn about the city's past.",3.1472045,101.6932234
+29,Independence Flag – Merdeka Square,"[solemnly] This field, now known as Dataran Merdeka or Independence Square, is where Malaysia's history changed forever. On the night of 30 August 1957, thousands gathered here to witness the birth of a new nation. At 11:58 p.m. the lights were switched off for two minutes of silence; then the Union Jack was lowered and the new Malayan flag was hoisted as the crowd cheered 'Merdeka! Merdeka!'. The lights came back on at midnight, marking the start of independence. The field was originally used for cricket and colonial sports but later became the focal point for parades and celebrations. Every Monday morning at 9:45 a.m. a flag raising ceremony takes place here.",3.1478571,101.6933847
+30,Royal Selangor Club,"[playfully] We end our tour at the Royal Selangor Club, founded in 1884 as a meeting place for educated and high‑ranking members of British colonial society. Early members were mostly British officials, although membership was determined more by social standing than race. The club initially occupied a small wooden building but moved into a two‑storey clubhouse designed by A.C. Norman in 1890 and later rebuilt in 1910 by Arthur Benison Hubback in Mock Tudor style. The club earned the nickname 'The Spotted Dog'; some say this referred to its mixed membership, while others claim it was inspired by the two Dalmatians belonging to a founder's wife. Although originally the preserve of European planters and colonial officials, the club's membership gradually diversified and today it hosts Indian lawyers and other professionals. Standing on the terrace, you can almost hear the echoes of cricket matches, rugby games and boisterous parties from days gone by.",3.1487199,101.6928507`;
+
+      const lines = csvData.trim().split('\n');
+      const headers = lines[0].split(',');
+      
+      const parsedStops: AudioStop[] = lines.slice(1).map(line => {
+        const values = line.split('","').map(val => val.replace(/^"/, '').replace(/"$/, ''));
+        return {
+          id: values[0],
+          title: values[1],
+          script_text: values[2],
+          lat: parseFloat(values[3]),
+          lon: parseFloat(values[4])
+        };
+      });
+
+      setStops(parsedStops);
+      generateMapHTML(parsedStops);
+    } catch (error) {
+      console.error('Error loading audio stops:', error);
+      Alert.alert('Error', 'Failed to load audio tour data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const generateMapHTML = (audioStops: AudioStop[]) => {
+    if (audioStops.length === 0) return;
+
+    const latitudes = audioStops.map(s => s.lat);
+    const longitudes = audioStops.map(s => s.lon);
+    const centerLat = (Math.min(...latitudes) + Math.max(...latitudes)) / 2;
+    const centerLng = (Math.min(...longitudes) + Math.max(...longitudes)) / 2;
+
+    const html = `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio Tour Map</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, sans-serif; }
+        #map { height: 100vh; width: 100vw; }
+        .audio-marker {
+            background-color: #f27d42;
+            color: white;
+            border: 3px solid white;
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 14px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+        .audio-marker.active {
+            background-color: #062c20;
+            transform: scale(1.2);
+        }
+        .leaflet-popup-content-wrapper {
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        .popup-title {
+            font-weight: bold;
+            color: #062c20;
+            margin-bottom: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        const map = L.map('map').setView([${centerLat}, ${centerLng}], 13);
+        
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap contributors',
+            detectRetina: true
+        }).addTo(map);
+        
+        map.zoomControl.remove();
+        
+        const stops = ${JSON.stringify(audioStops)};
+        const markers = [];
+        
+        stops.forEach((stop, index) => {
+            const marker = L.marker([stop.lat, stop.lon], {
+                icon: L.divIcon({
+                    className: 'audio-marker',
+                    html: stop.id,
+                    iconSize: [32, 32],
+                    iconAnchor: [16, 16],
+                    popupAnchor: [0, -16]
+                })
+            })
+            .bindPopup(\`<div class="popup-title">\${stop.title}</div>\`)
+            .on('click', function() {
+                markers.forEach(m => m.getElement().classList.remove('active'));
+                this.getElement().classList.add('active');
+                
+                window.ReactNativeWebView && window.ReactNativeWebView.postMessage(JSON.stringify({
+                    type: 'stopClick',
+                    stopIndex: index,
+                    stop: stop
+                }));
+            })
+            .addTo(map);
+            
+            markers.push(marker);
+        });
+        
+        if (stops.length > 0) {
+            const group = new L.featureGroup(markers);
+            map.fitBounds(group.getBounds().pad(0.1));
+        }
+        
+        window.setActiveMarker = function(index) {
+            markers.forEach(m => m.getElement().classList.remove('active'));
+            if (markers[index]) {
+                markers[index].getElement().classList.add('active');
+            }
+        };
+    </script>
+</body>
+</html>`;
+
+    setMapHTML(html);
+  };
+
+  const playAudio = async (stop: AudioStop) => {
+    try {
+      if (sound) {
+        await sound.unloadAsync();
+      }
+
+      const audioUri = `./assets/audiotour/${stop.id}.mp3`;
+      const { sound: newSound } = await Audio.Sound.createAsync(
+        { uri: audioUri },
+        { shouldPlay: true },
+        onPlaybackStatusUpdate
+      );
+      
+      setSound(newSound);
+      setCurrentStop(stop);
+      setIsPlaying(true);
+      setCurrentIndex(parseInt(stop.id) - 1);
+    } catch (error) {
+      console.error('Error playing audio:', error);
+      Alert.alert('Audio Error', `Could not play audio for stop ${stop.id}`);
+    }
+  };
+
+  const onPlaybackStatusUpdate = (status: any) => {
+    if (status.isLoaded) {
+      setPlaybackPosition(status.positionMillis || 0);
+      setPlaybackDuration(status.durationMillis || 0);
+      setIsPlaying(status.isPlaying || false);
+      
+      if (status.didJustFinish) {
+        setIsPlaying(false);
+      }
+    }
+  };
+
+  const togglePlayPause = async () => {
+    if (sound) {
+      if (isPlaying) {
+        await sound.pauseAsync();
+      } else {
+        await sound.playAsync();
+      }
+    }
+  };
+
+  const navigateToStop = (direction: 'prev' | 'next') => {
+    let newIndex = currentIndex;
+    if (direction === 'prev' && currentIndex > 0) {
+      newIndex = currentIndex - 1;
+    } else if (direction === 'next' && currentIndex < stops.length - 1) {
+      newIndex = currentIndex + 1;
+    }
+    
+    if (newIndex !== currentIndex) {
+      const stop = stops[newIndex];
+      playAudio(stop);
+    }
+  };
+
+  const formatTime = (millis: number) => {
+    const minutes = Math.floor(millis / 60000);
+    const seconds = Math.floor((millis % 60000) / 1000);
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  };
+
+  if (loading) {
+    return (
+      <>
+        <StatusBar
+          translucent
+          backgroundColor={theme.colors.primary}
+          barStyle="light-content"
+          animated={true}
+        />
+        <View style={[styles.container, styles.loadingContainer]}>
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+          <Text style={styles.loadingText}>Loading audio tour...</Text>
+        </View>
+      </>
+    );
+  }
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.text}>🎧 Audio Tour</Text>
-    </View>
+    <>
+      <StatusBar
+        translucent
+        backgroundColor={theme.colors.primary}
+        barStyle="light-content"
+        animated={true}
+      />
+      <View style={{ backgroundColor: theme.colors.primary, flex: 1 }}>
+        <SafeAreaView style={styles.container}>
+          {/* Header */}
+          <View style={styles.header}>
+            <Ionicons name="headset" size={24} color="white" />
+            <Text style={styles.headerTitle}>Audio Tour</Text>
+          </View>
+
+          {/* Map Container */}
+          <View style={styles.mapContainer}>
+            {mapHTML ? (
+              <WebView
+                source={{ html: mapHTML }}
+                style={styles.webview}
+                onError={(error) => {
+                  console.error('WebView error:', error);
+                  Alert.alert('Map Error', 'Failed to load map');
+                }}
+                onMessage={(event) => {
+                  try {
+                    const data = JSON.parse(event.nativeEvent.data);
+                    if (data.type === 'stopClick') {
+                      playAudio(data.stop);
+                    }
+                  } catch (error) {
+                    console.error('Error parsing message:', error);
+                  }
+                }}
+                javaScriptEnabled={true}
+                domStorageEnabled={true}
+                startInLoadingState={true}
+                renderLoading={() => (
+                  <View style={styles.webviewLoading}>
+                    <ActivityIndicator size="large" color={theme.colors.primary} />
+                    <Text style={styles.loadingText}>Loading map...</Text>
+                  </View>
+                )}
+              />
+            ) : (
+              <View style={styles.noDataContainer}>
+                <Ionicons name="headset-outline" size={64} color={theme.colors.muted} />
+                <Text style={styles.noDataText}>Audio tour not available</Text>
+              </View>
+            )}
+          </View>
+
+          {/* Audio Player */}
+          {currentStop && (
+            <View style={styles.audioPlayer}>
+              <View style={styles.stopInfo}>
+                <Text style={styles.stopNumber}>Stop {currentStop.id}</Text>
+                <Text style={styles.stopTitle} numberOfLines={2}>
+                  {currentStop.title}
+                </Text>
+              </View>
+              
+              <View style={styles.controls}>
+                <TouchableOpacity
+                  style={[styles.controlButton, currentIndex === 0 && styles.disabledButton]}
+                  onPress={() => navigateToStop('prev')}
+                  disabled={currentIndex === 0}
+                >
+                  <Ionicons name="play-skip-back" size={24} color={currentIndex === 0 ? theme.colors.muted : 'white'} />
+                </TouchableOpacity>
+                
+                <TouchableOpacity style={styles.playButton} onPress={togglePlayPause}>
+                  <Ionicons name={isPlaying ? 'pause' : 'play'} size={32} color="white" />
+                </TouchableOpacity>
+                
+                <TouchableOpacity
+                  style={[styles.controlButton, currentIndex === stops.length - 1 && styles.disabledButton]}
+                  onPress={() => navigateToStop('next')}
+                  disabled={currentIndex === stops.length - 1}
+                >
+                  <Ionicons name="play-skip-forward" size={24} color={currentIndex === stops.length - 1 ? theme.colors.muted : 'white'} />
+                </TouchableOpacity>
+              </View>
+              
+              <View style={styles.progressContainer}>
+                <Text style={styles.timeText}>{formatTime(playbackPosition)}</Text>
+                <View style={styles.progressBar}>
+                  <View 
+                    style={[
+                      styles.progressFill, 
+                      { width: `${playbackDuration > 0 ? (playbackPosition / playbackDuration) * 100 : 0}%` }
+                    ]} 
+                  />
+                </View>
+                <Text style={styles.timeText}>{formatTime(playbackDuration)}</Text>
+              </View>
+            </View>
+          )}
+        </SafeAreaView>
+      </View>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  text: { fontSize: 18 }
+  container: {
+    flex: 1,
+  },
+  loadingContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: theme.colors.background,
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: theme.colors.text,
+    fontFamily: theme.fonts.body,
+  },
+  header: {
+    backgroundColor: theme.colors.primary,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  headerTitle: {
+    color: 'white',
+    fontSize: 20,
+    fontFamily: theme.fonts.heading,
+    fontWeight: '600',
+    marginLeft: 12,
+  },
+  mapContainer: {
+    flex: 1,
+    backgroundColor: theme.colors.background,
+  },
+  webview: {
+    flex: 1,
+  },
+  webviewLoading: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: theme.colors.background,
+  },
+  noDataContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: theme.colors.background,
+    paddingHorizontal: 32,
+  },
+  noDataText: {
+    fontSize: 18,
+    fontFamily: theme.fonts.heading,
+    fontWeight: '600',
+    color: theme.colors.text,
+    marginTop: 16,
+    textAlign: 'center',
+  },
+  audioPlayer: {
+    backgroundColor: theme.colors.primary,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    minHeight: 140,
+  },
+  stopInfo: {
+    marginBottom: 16,
+  },
+  stopNumber: {
+    color: 'white',
+    fontSize: 14,
+    fontFamily: theme.fonts.body,
+    fontWeight: '600',
+    opacity: 0.8,
+  },
+  stopTitle: {
+    color: 'white',
+    fontSize: 18,
+    fontFamily: theme.fonts.heading,
+    fontWeight: '600',
+    marginTop: 4,
+  },
+  controls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  controlButton: {
+    padding: 12,
+    marginHorizontal: 20,
+  },
+  disabledButton: {
+    opacity: 0.5,
+  },
+  playButton: {
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginHorizontal: 20,
+  },
+  progressContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  timeText: {
+    color: 'white',
+    fontSize: 12,
+    fontFamily: theme.fonts.body,
+    minWidth: 40,
+  },
+  progressBar: {
+    flex: 1,
+    height: 4,
+    backgroundColor: 'rgba(255,255,255,0.3)',
+    borderRadius: 2,
+    marginHorizontal: 12,
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: 'white',
+    borderRadius: 2,
+  },
 });

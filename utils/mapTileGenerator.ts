@@ -44,6 +44,106 @@ function latToTileY(lat: number, zoom: number): number {
   return (1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * Math.pow(2, zoom);
 }
 
+export function generateAudioTourMapHTML(stops: any[], centerLat: number, centerLng: number): string {
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio Tour Map</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, sans-serif; }
+        #map { height: 100vh; width: 100vw; }
+        .audio-marker {
+            background-color: #f27d42;
+            color: white;
+            border: 3px solid white;
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 14px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+        .audio-marker.active {
+            background-color: #062c20;
+            transform: scale(1.2);
+        }
+        .leaflet-popup-content-wrapper {
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        .popup-title {
+            font-weight: bold;
+            color: #062c20;
+            margin-bottom: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        const map = L.map('map').setView([${centerLat}, ${centerLng}], 13);
+        
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap contributors',
+            detectRetina: true
+        }).addTo(map);
+        
+        map.zoomControl.remove();
+        
+        const stops = ${JSON.stringify(stops)};
+        const markers = [];
+        
+        stops.forEach((stop, index) => {
+            const marker = L.marker([stop.lat, stop.lon], {
+                icon: L.divIcon({
+                    className: 'audio-marker',
+                    html: stop.id,
+                    iconSize: [32, 32],
+                    iconAnchor: [16, 16],
+                    popupAnchor: [0, -16]
+                })
+            })
+            .bindPopup(\`<div class="popup-title">\${stop.title}</div>\`)
+            .on('click', function() {
+                markers.forEach(m => m.getElement().classList.remove('active'));
+                this.getElement().classList.add('active');
+                
+                window.ReactNativeWebView && window.ReactNativeWebView.postMessage(JSON.stringify({
+                    type: 'stopClick',
+                    stopIndex: index,
+                    stop: stop
+                }));
+            })
+            .addTo(map);
+            
+            markers.push(marker);
+        });
+        
+        if (stops.length > 0) {
+            const group = new L.featureGroup(markers);
+            map.fitBounds(group.getBounds().pad(0.1));
+        }
+        
+        window.setActiveMarker = function(index) {
+            markers.forEach(m => m.getElement().classList.remove('active'));
+            if (markers[index]) {
+                markers[index].getElement().classList.add('active');
+            }
+        };
+    </script>
+</body>
+</html>`;
+}
+
 export function generateMapHTML(venues: any[], bounds: MapBounds, centerLat: number, centerLng: number): string {
   const venueMarkers = venues.map(venue => ({
     id: venue.id,
