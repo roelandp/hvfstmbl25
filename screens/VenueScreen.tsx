@@ -160,7 +160,7 @@ export default function VenueScreen() {
                     <Text style={styles.loadingText}>Loading map...</Text>
                   </View>
                 )}
-              /></>
+              />
             ) : (
               <View style={styles.noDataContainer}>
                 <Ionicons name="map-outline" size={64} color={theme.colors.muted} />
