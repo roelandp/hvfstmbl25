@@ -15,66 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAudioPlayer, AudioSource, AudioStatus } from 'expo-audio';
 import { theme } from '../theme';
 import { generateAudioTourMapHTML } from '../utils/mapTileGenerator';
-
-// Assuming a GPX parser utility exists or is implemented elsewhere.
-// For demonstration, we'll include a simplified mock parser here.
-// In a real app, you might import this from a separate file:
-// import { parseGPX } from '../utils/gpxParser';
-
-// Mock GPX data for demonstration purposes.
-// In a real application, this would be loaded from '../assets/audiotour.gpx'
-const mockGpxData = `<?xml version="1.0" encoding="UTF-8"?>
-<gpx version="1.1" creator="Example" xmlns="http://www.topografix.com/GPX/1/1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd">
-  <trk>
-    <name>Example Route</name>
-    <trkseg>
-      <trkpt lat="3.1402646" lon="101.6983076">
-        <ele>50.0</ele>
-        <time>2023-10-27T10:00:00Z</time>
-      </trkpt>
-      <trkpt lat="3.1408989" lon="101.6980872">
-        <ele>52.0</ele>
-        <time>2023-10-27T10:05:00Z</time>
-      </trkpt>
-      <trkpt lat="3.1413323" lon="101.6976873">
-        <ele>55.0</ele>
-        <time>2023-10-27T10:10:00Z</time>
-      </trkpt>
-      <trkpt lat="3.1413989" lon="101.6972928">
-        <ele>56.0</ele>
-        <time>2023-10-27T10:15:00Z</time>
-      </trkpt>
-    </trkseg>
-  </trk>
-</gpx>`;
-
-// Simplified GPX parsing function.
-// A robust solution would use a dedicated library for XML parsing.
-const parseGpxRoute = (gpxString: string): { lat: number; lon: number }[] => {
-  const routePoints: { lat: number; lon: number }[] = [];
-  try {
-    // Use DOMParser available in most JS environments (including React Native's WebView context if needed, but better to parse here)
-    if (typeof DOMParser === 'undefined') {
-      console.error('DOMParser is not available. Cannot parse GPX.');
-      return [];
-    }
-    const parser = new DOMParser();
-    const xmlDoc = parser.parseFromString(gpxString, 'text/xml');
-
-    const trackpoints = xmlDoc.querySelectorAll('trkpt');
-    trackpoints.forEach((trkpt) => {
-      const lat = parseFloat(trkpt.getAttribute('lat') || '0');
-      const lon = parseFloat(trkpt.getAttribute('lon') || '0');
-      if (!isNaN(lat) && !isNaN(lon)) {
-        routePoints.push({ lat, lon });
-      }
-    });
-  } catch (error) {
-    console.error('Error during GPX parsing:', error);
-    // Alert.alert is handled in the UI component if needed
-  }
-  return routePoints;
-};
+import { parseGPX } from '../utils/gpxParser';
 
 
 interface AudioStop {
@@ -110,15 +51,131 @@ export default function AudioTourScreen() {
 
       // Load and parse GPX data
       try {
-        // In a real app, you would require the file:
-        // const gpxFile = require('../assets/audiotour.gpx');
-        // For this example, we use the mock data string directly.
-        const parsedRoute = parseGpxRoute(mockGpxData);
+        // Use the actual GPX content from the file
+        const gpxContent = `<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="chatgpt" xmlns="http://www.topografix.com/GPX/1/1">
+  <metadata>
+    <name>KL Walking Tour - Combined Tracks</name>
+    <time>2025-08-29T10:49:22.630111Z</time>
+  </metadata>
+  <trk>
+    <name>KL Walking Tour Track 1 (LineString)</name>
+    <trkseg>
+      <trkpt lat="3.1401900" lon="101.6982000"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1403500" lon="101.6981100"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1403800" lon="101.6980700"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1403900" lon="101.6980400"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1404000" lon="101.6979800"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1404500" lon="101.6979900"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1405100" lon="101.6980100"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1405900" lon="101.6980200"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1406700" lon="101.6980200"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1411100" lon="101.6980200"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1411700" lon="101.6980100"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1412200" lon="101.6975900"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1412600" lon="101.6973500"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1413000" lon="101.6971500"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1413200" lon="101.6971100"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1413400" lon="101.6971000"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1413500" lon="101.6970900"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1413700" lon="101.6970800"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1413900" lon="101.6970700"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1414200" lon="101.6970600"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1414500" lon="101.6970600"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1416000" lon="101.6970900"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1415800" lon="101.6973200"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1415600" lon="101.6975500"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1414000" lon="101.6975700"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1412200" lon="101.6975900"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1411700" lon="101.6980100"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1412400" lon="101.6980100"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1415100" lon="101.6979900"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1416500" lon="101.6979700"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1424900" lon="101.6978900"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1425300" lon="101.6973800"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1425600" lon="101.6971700"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1426600" lon="101.6964800"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1430600" lon="101.6965500"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1431800" lon="101.6965700"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1433000" lon="101.6965800"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1435500" lon="101.6965900"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1436100" lon="101.6966000"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1443600" lon="101.6966100"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1443800" lon="101.6962200"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1443900" lon="101.6961600"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1444000" lon="101.6957400"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1445300" lon="101.6957400"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1446900" lon="101.6957700"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1452200" lon="101.6957700"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1454100" lon="101.6957800"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1455000" lon="101.6957900"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1457000" lon="101.6958000"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1458500" lon="101.6958200"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1460100" lon="101.6958600"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1460500" lon="101.6958600"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1468200" lon="101.6959800"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1469000" lon="101.6959800"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1473600" lon="101.6959800"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1475100" lon="101.6959900"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1476300" lon="101.6960100"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1476800" lon="101.6960200"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1478400" lon="101.6960800"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1479500" lon="101.6960100"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1479900" lon="101.6959900"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1480700" lon="101.6959600"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1480900" lon="101.6959600"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1481100" lon="101.6959600"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1481400" lon="101.6959700"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1481500" lon="101.6959800"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1485300" lon="101.6962800"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1485900" lon="101.6963200"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1487300" lon="101.6963900"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1487700" lon="101.6964200"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1488000" lon="101.6964500"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1488200" lon="101.6964700"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1490400" lon="101.6965500"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1490800" lon="101.6965800"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1491100" lon="101.6966200"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1491300" lon="101.6966300"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1497600" lon="101.6960800"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1499200" lon="101.6959300"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1497500" lon="101.6957400"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1497000" lon="101.6956800"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1496300" lon="101.6955700"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1495700" lon="101.6954700"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1494600" lon="101.6952600"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1494000" lon="101.6952700"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1493600" lon="101.6952700"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1493500" lon="101.6952700"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1493400" lon="101.6952600"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1493200" lon="101.6952400"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1493100" lon="101.6952200"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1493300" lon="101.6951700"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1493600" lon="101.6950600"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1494000" lon="101.6949200"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1494500" lon="101.6947000"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1494600" lon="101.6946100"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1495100" lon="101.6945700"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1495600" lon="101.6945000"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1496100" lon="101.6944000"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1494800" lon="101.6943700"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1481900" lon="101.6940800"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1479900" lon="101.6940400"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1474900" lon="101.6939500"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1472300" lon="101.6938800"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1472000" lon="101.6938700"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1473400" lon="101.6933500"><ele>0.0</ele></trkpt>
+      <trkpt lat="3.1473600" lon="101.6933100"><ele>0.0</ele></trkpt>
+    </trkseg>
+  </trk>
+</gpx>`;
+        
+        const parsedRoute = parseGPX(gpxContent);
         setGpxRoute(parsedRoute);
         console.log('Parsed GPX Route:', parsedRoute.length, 'points');
       } catch (error) {
         console.error('Error parsing GPX data:', error);
-        // Alert.alert is handled in the UI component if needed
+        Alert.alert('GPX Error', 'Failed to load route data');
       }
     };
 
