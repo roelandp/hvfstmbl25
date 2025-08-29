@@ -44,7 +44,7 @@ function latToTileY(lat: number, zoom: number): number {
   return (1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * Math.pow(2, zoom);
 }
 
-export function generateAudioTourMapHTML(stops: any[], centerLat: number, centerLng: number): string {
+export function generateAudioTourMapHTML(stops: any[], centerLat: number, centerLng: number, routePoints?: { lat: number; lon: number }[]): string {
   return `
 <!DOCTYPE html>
 <html>
@@ -100,7 +100,18 @@ export function generateAudioTourMapHTML(stops: any[], centerLat: number, center
         map.zoomControl.remove();
         
         const stops = ${JSON.stringify(stops)};
+        const routePoints = ${JSON.stringify(routePoints || [])};
         const markers = [];
+        
+        // Add GPX route line if available
+        if (routePoints && routePoints.length > 0) {
+            const routeLine = L.polyline(routePoints.map(p => [p.lat, p.lon]), {
+                color: '#f27d42',
+                weight: 4,
+                opacity: 0.8,
+                smoothFactor: 1
+            }).addTo(map);
+        }
         
         stops.forEach((stop, index) => {
             const marker = L.marker([stop.lat, stop.lon], {
@@ -128,8 +139,15 @@ export function generateAudioTourMapHTML(stops: any[], centerLat: number, center
             markers.push(marker);
         });
         
-        if (stops.length > 0) {
-            const group = new L.featureGroup(markers);
+        // Fit bounds to include both markers and route
+        const allPoints = [...markers];
+        if (routePoints && routePoints.length > 0) {
+            const routeLine = L.polyline(routePoints.map(p => [p.lat, p.lon]));
+            allPoints.push(routeLine);
+        }
+        
+        if (allPoints.length > 0) {
+            const group = new L.featureGroup(allPoints);
             map.fitBounds(group.getBounds().pad(0.1));
         }
         

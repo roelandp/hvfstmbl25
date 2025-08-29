@@ -16,6 +16,67 @@ import { useAudioPlayer, AudioSource, AudioStatus } from 'expo-audio';
 import { theme } from '../theme';
 import { generateAudioTourMapHTML } from '../utils/mapTileGenerator';
 
+// Assuming a GPX parser utility exists or is implemented elsewhere.
+// For demonstration, we'll include a simplified mock parser here.
+// In a real app, you might import this from a separate file:
+// import { parseGPX } from '../utils/gpxParser';
+
+// Mock GPX data for demonstration purposes.
+// In a real application, this would be loaded from '../assets/audiotour.gpx'
+const mockGpxData = `<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="Example" xmlns="http://www.topografix.com/GPX/1/1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd">
+  <trk>
+    <name>Example Route</name>
+    <trkseg>
+      <trkpt lat="3.1402646" lon="101.6983076">
+        <ele>50.0</ele>
+        <time>2023-10-27T10:00:00Z</time>
+      </trkpt>
+      <trkpt lat="3.1408989" lon="101.6980872">
+        <ele>52.0</ele>
+        <time>2023-10-27T10:05:00Z</time>
+      </trkpt>
+      <trkpt lat="3.1413323" lon="101.6976873">
+        <ele>55.0</ele>
+        <time>2023-10-27T10:10:00Z</time>
+      </trkpt>
+      <trkpt lat="3.1413989" lon="101.6972928">
+        <ele>56.0</ele>
+        <time>2023-10-27T10:15:00Z</time>
+      </trkpt>
+    </trkseg>
+  </trk>
+</gpx>`;
+
+// Simplified GPX parsing function.
+// A robust solution would use a dedicated library for XML parsing.
+const parseGpxRoute = (gpxString: string): { lat: number; lon: number }[] => {
+  const routePoints: { lat: number; lon: number }[] = [];
+  try {
+    // Use DOMParser available in most JS environments (including React Native's WebView context if needed, but better to parse here)
+    if (typeof DOMParser === 'undefined') {
+      console.error('DOMParser is not available. Cannot parse GPX.');
+      return [];
+    }
+    const parser = new DOMParser();
+    const xmlDoc = parser.parseFromString(gpxString, 'text/xml');
+
+    const trackpoints = xmlDoc.querySelectorAll('trkpt');
+    trackpoints.forEach((trkpt) => {
+      const lat = parseFloat(trkpt.getAttribute('lat') || '0');
+      const lon = parseFloat(trkpt.getAttribute('lon') || '0');
+      if (!isNaN(lat) && !isNaN(lon)) {
+        routePoints.push({ lat, lon });
+      }
+    });
+  } catch (error) {
+    console.error('Error during GPX parsing:', error);
+    // Alert.alert is handled in the UI component if needed
+  }
+  return routePoints;
+};
+
+
 interface AudioStop {
   id: string;
   title: string;
@@ -37,10 +98,31 @@ export default function AudioTourScreen() {
   const [duration, setDuration] = useState(0);
   const webViewRef = useRef<WebView>(null);
 
+  // State to hold the parsed GPX route data
+  const [gpxRoute, setGpxRoute] = useState<{ lat: number; lon: number }[]>([]);
+
   const player = useAudioPlayer();
 
   useEffect(() => {
-    loadAudioStops();
+    // Load audio stops and initial GPX data
+    const loadData = async () => {
+      await loadAudioStops();
+
+      // Load and parse GPX data
+      try {
+        // In a real app, you would require the file:
+        // const gpxFile = require('../assets/audiotour.gpx');
+        // For this example, we use the mock data string directly.
+        const parsedRoute = parseGpxRoute(mockGpxData);
+        setGpxRoute(parsedRoute);
+        console.log('Parsed GPX Route:', parsedRoute.length, 'points');
+      } catch (error) {
+        console.error('Error parsing GPX data:', error);
+        // Alert.alert is handled in the UI component if needed
+      }
+    };
+
+    loadData();
 
     // Set up audio player event listeners
     const statusSubscription = player.addListener('playbackStatusUpdate', (status: any) => {
@@ -57,7 +139,7 @@ export default function AudioTourScreen() {
       statusSubscription?.remove();
       player.pause();
     };
-  }, []);
+  }, []); // This effect runs once on mount
 
   const loadAudioStops = async () => {
     try {
@@ -94,7 +176,6 @@ export default function AudioTourScreen() {
 29,Independence Flag – Merdeka Square,"[solemnly] This field, now known as Dataran Merdeka or Independence Square, is where Malaysia's history changed forever. On the night of 30 August 1957, thousands gathered here to witness the birth of a new nation. At 11:58 p.m. the lights were switched off for two minutes of silence; then the Union Jack was lowered and the new Malayan flag was hoisted as the crowd cheered 'Merdeka! Merdeka!'. The lights came back on at midnight, marking the start of independence. The field was originally used for cricket and colonial sports but later became the focal point for parades and celebrations. Every Monday morning at 9:45 a.m. a flag raising ceremony takes place here.",3.1478571,101.6933847
 30,Royal Selangor Club,"[playfully] We end our tour at the Royal Selangor Club, founded in 1884 as a meeting place for educated and high‑ranking members of British colonial society. Early members were mostly British officials, although membership was determined more by social standing than race. The club initially occupied a small wooden building but moved into a two‑storey clubhouse designed by A.C. Norman in 1890 and later rebuilt in 1910 by Arthur Benison Hubback in Mock Tudor style. The club earned the nickname 'The Spotted Dog'; some say this referred to its mixed membership, while others claim it was inspired by the two Dalmatians belonging to a founder's wife. Although originally the preserve of European planters and colonial officials, the club's membership gradually diversified and today it hosts Indian lawyers and other professionals. Standing on the terrace, you can almost hear the echoes of cricket matches, rugby games and boisterous parties from days gone by.",3.1487199,101.6928507`;
 
-      // Parse CSV data
       const lines = csvData.trim().split('\n');
       const headers = lines[0].split(',');
 
@@ -129,31 +210,80 @@ export default function AudioTourScreen() {
       console.log('Loaded stops:', parsedStops.length);
       setStops(parsedStops);
 
-      if (parsedStops.length > 0) {
-        generateMapHTML(parsedStops);
-      }
+      // Set loading to false only after both stops and GPX are processed (or attempted)
+      // This will be handled by the useEffect that depends on stops and gpxRoute
     } catch (error) {
       console.error('Error loading audio stops:', error);
       Alert.alert('Error', 'Failed to load audio tour data');
-    } finally {
-      setLoading(false);
+      setLoading(false); // Ensure loading is false even on error
     }
   };
 
-  const generateMapHTML = (audioStops: AudioStop[]) => {
-    if (audioStops.length === 0) return;
+  // Effect to generate map HTML when stops or GPX data is ready
+  useEffect(() => {
+    if (stops.length > 0 && gpxRoute.length > 0) {
+      console.log('Generating map with stops and GPX route...');
+      const latitudes = stops.map(s => s.lat);
+      const longitudes = stops.map(s => s.lon);
+      // Calculate center based on all points (stops + GPX route)
+      const allLat = [...latitudes, ...gpxRoute.map(p => p.lat)];
+      const allLon = [...longitudes, ...gpxRoute.map(p => p.lon)];
 
-    const latitudes = audioStops.map(s => s.lat);
-    const longitudes = audioStops.map(s => s.lon);
-    const centerLat = (Math.min(...latitudes) + Math.max(...latitudes)) / 2;
-    const centerLng = (Math.min(...longitudes) + Math.max(...longitudes)) / 2;
+      if (allLat.length === 0 || allLon.length === 0) {
+          console.error("No valid coordinates found for map centering.");
+          setMapHTML(''); // Clear map HTML if no coordinates
+          setLoading(false);
+          return;
+      }
 
-    console.log('Generating map with', audioStops.length, 'stops');
-    console.log('Center:', centerLat, centerLng);
+      const centerLat = (Math.min(...allLat) + Math.max(...allLat)) / 2;
+      const centerLng = (Math.min(...allLon) + Math.max(...allLon)) / 2;
 
-    const html = generateAudioTourMapHTML(audioStops, centerLat, centerLng);
-    setMapHTML(html);
-  };
+      // Call generateAudioTourMapHTML with GPX route data.
+      // NOTE: You must update ../utils/mapTileGenerator.ts to accept and use the 'gpxRoute' parameter.
+      // For example, its signature might become:
+      // generateAudioTourMapHTML(audioStops: AudioStop[], centerLat: number, centerLng: number, gpxRoute?: { lat: number; lon: number }[]): string
+      const html = generateAudioTourMapHTML(stops, centerLat, centerLng, gpxRoute);
+      setMapHTML(html);
+      setLoading(false); // Set loading to false once map is generated
+    } else if (stops.length > 0 && gpxRoute.length === 0) {
+      // If GPX failed or is empty, generate map with stops only
+      console.log('Generating map with stops only (GPX data missing or empty)...');
+      const latitudes = stops.map(s => s.lat);
+      const longitudes = stops.map(s => s.lon);
+
+      if (latitudes.length === 0 || longitudes.length === 0) {
+          console.error("No valid coordinates found for map centering.");
+          setMapHTML('');
+          setLoading(false);
+          return;
+      }
+
+      const centerLat = (Math.min(...latitudes) + Math.max(...latitudes)) / 2;
+      const centerLng = (Math.min(...longitudes) + Math.max(...longitudes)) / 2;
+      const html = generateAudioTourMapHTML(stops, centerLat, centerLng); // No GPX data
+      setMapHTML(html);
+      setLoading(false);
+    } else if (stops.length === 0) {
+      // If stops failed to load, but GPX is present, generate map with GPX route only
+      if (gpxRoute.length > 0) {
+          console.log('Generating map with GPX route only (audio stops missing)...');
+          const latitudes = gpxRoute.map(p => p.lat);
+          const longitudes = gpxRoute.map(p => p.lon);
+          const centerLat = (Math.min(...latitudes) + Math.max(...latitudes)) / 2;
+          const centerLng = (Math.min(...longitudes) + Math.max(...longitudes)) / 2;
+          // Assuming generateAudioTourMapHTML can accept only GPX route if no stops
+          // This might require an update to mapTileGenerator
+          const html = generateAudioTourMapHTML([], centerLat, centerLng, gpxRoute);
+          setMapHTML(html);
+      } else {
+          console.log('No stops or GPX data available to generate map.');
+          setMapHTML(''); // Clear map if no data
+      }
+      setLoading(false);
+    }
+  }, [stops, gpxRoute]); // Re-run when stops or gpxRoute change
+
 
   // Static mapping of audio files for require()
   const audioFiles: { [key: string]: any } = {
