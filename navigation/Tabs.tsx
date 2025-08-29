@@ -3,7 +3,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import { Platform } from 'react-native';
 import ProgramStack from './ProgramStack';
-import VenueScreen from '../screens/VenueScreen';
+import VenueStack from './VenueStack';
 import SightseeingScreen from '../screens/SightseeingScreen';
 import AudioTourScreen from '../screens/AudioTourScreen';
 import ConnectScreen from '../screens/ConnectScreen';
@@ -46,7 +46,7 @@ export default function Tabs() {
       />
       <Tab.Screen
         name="Venue"
-        component={VenueScreen}
+        component={VenueStack}
         options={{
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="location-outline" color={color} size={size} />

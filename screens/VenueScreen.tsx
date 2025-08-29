@@ -8,6 +8,7 @@ import {
   StatusBar,
   Alert 
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { WebView } from 'react-native-webview';
 import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
@@ -26,6 +27,7 @@ interface Venue {
 }
 
 export default function VenueScreen() {
+  const navigation = useNavigation();
   const [venues, setVenues] = useState<Venue[]>([]);
   const [loading, setLoading] = useState(true);
   const [mapHTML, setMapHTML] = useState<string>('');
@@ -140,12 +142,10 @@ export default function VenueScreen() {
                     const data = JSON.parse(event.nativeEvent.data);
                     if (data.type === 'venueClick') {
                       // Navigate to venue detail screen
-                      // For now, show an alert with venue info
-                      Alert.alert(
-                        data.venue.name,
-                        data.venue.address,
-                        [{ text: 'OK' }]
-                      );
+                      navigation.navigate('VenueDetail', {
+                        venueName: data.venue.name,
+                        venueId: data.venue.id
+                      });
                     }
                   } catch (error) {
                     console.error('Error parsing message:', error);

@@ -46,6 +46,7 @@ function latToTileY(lat: number, zoom: number): number {
 
 export function generateMapHTML(venues: any[], bounds: MapBounds, centerLat: number, centerLng: number): string {
   const venueMarkers = venues.map(venue => ({
+    id: venue.id,
     lat: venue.latitude,
     lng: venue.longitude,
     name: venue.name,
