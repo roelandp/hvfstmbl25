@@ -68,6 +68,21 @@ export default function ConnectScreen({ navigation }: any) {
     </TouchableOpacity>
   );
 
+  const getCategoryIcon = (category: string) => {
+    const categoryLower = category.toLowerCase();
+    if (categoryLower.includes('general')) return 'information-circle-outline';
+    if (categoryLower.includes('technical') || categoryLower.includes('tech')) return 'construct-outline';
+    if (categoryLower.includes('event') || categoryLower.includes('schedule')) return 'calendar-outline';
+    if (categoryLower.includes('location') || categoryLower.includes('venue')) return 'location-outline';
+    if (categoryLower.includes('audio') || categoryLower.includes('tour')) return 'headset-outline';
+    if (categoryLower.includes('payment') || categoryLower.includes('money')) return 'card-outline';
+    if (categoryLower.includes('food') || categoryLower.includes('dining')) return 'restaurant-outline';
+    if (categoryLower.includes('transport') || categoryLower.includes('travel')) return 'car-outline';
+    if (categoryLower.includes('contact') || categoryLower.includes('support')) return 'mail-outline';
+    if (categoryLower.includes('safety') || categoryLower.includes('security')) return 'shield-outline';
+    return 'help-circle-outline'; // default
+  };
+
   const renderCategoryTab = (category: string) => (
     <TouchableOpacity
       key={category}
@@ -77,14 +92,21 @@ export default function ConnectScreen({ navigation }: any) {
       ]}
       onPress={() => setSelectedCategory(category)}
     >
-      <Text
-        style={[
-          styles.categoryTabText,
-          selectedCategory === category && styles.selectedCategoryTabText,
-        ]}
-      >
-        {category}
-      </Text>
+      <View style={styles.categoryTabContent}>
+        <Ionicons 
+          name={getCategoryIcon(category)} 
+          size={20} 
+          color={selectedCategory === category ? 'white' : 'rgba(255, 255, 255, 0.8)'} 
+        />
+        <Text
+          style={[
+            styles.categoryTabText,
+            selectedCategory === category && styles.selectedCategoryTabText,
+          ]}
+        >
+          {category}
+        </Text>
+      </View>
     </TouchableOpacity>
   );
 
@@ -123,36 +145,38 @@ export default function ConnectScreen({ navigation }: any) {
             </View>
           </View>
 
-          {/* Category Tabs */}
-          <View style={styles.tabsContainer}>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.tabsScrollContent}
-            >
-              {categories.map(renderCategoryTab)}
-            </ScrollView>
-          </View>
-
-          {/* FAQ List */}
-          <View style={styles.content}>
-            {filteredFaqs.length > 0 ? (
-              <FlatList
-                data={filteredFaqs}
-                renderItem={renderFaqItem}
-                keyExtractor={(item) => item.id}
+          {/* Main Content Area - Mac-style horizontal layout */}
+          <View style={styles.mainContent}>
+            {/* Category Sidebar */}
+            <View style={styles.categorySidebar}>
+              <ScrollView
                 showsVerticalScrollIndicator={false}
-                contentContainerStyle={styles.listContent}
-              />
-            ) : (
-              <View style={styles.noDataContainer}>
-                <Ionicons name="document-text-outline" size={64} color={theme.colors.muted} />
-                <Text style={styles.noDataText}>No FAQ items found</Text>
-                <Text style={styles.noDataSubtext}>
-                  Try selecting a different category
-                </Text>
-              </View>
-            )}
+                contentContainerStyle={styles.sidebarScrollContent}
+              >
+                {categories.map(renderCategoryTab)}
+              </ScrollView>
+            </View>
+
+            {/* FAQ List */}
+            <View style={styles.content}>
+              {filteredFaqs.length > 0 ? (
+                <FlatList
+                  data={filteredFaqs}
+                  renderItem={renderFaqItem}
+                  keyExtractor={(item) => item.id}
+                  showsVerticalScrollIndicator={false}
+                  contentContainerStyle={styles.listContent}
+                />
+              ) : (
+                <View style={styles.noDataContainer}>
+                  <Ionicons name="document-text-outline" size={64} color={theme.colors.muted} />
+                  <Text style={styles.noDataText}>No FAQ items found</Text>
+                  <Text style={styles.noDataSubtext}>
+                    Try selecting a different category
+                  </Text>
+                </View>
+              )}
+            </View>
           </View>
         </SafeAreaView>
       </View>
@@ -192,30 +216,43 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginLeft: 12,
   },
-  tabsContainer: {
-    backgroundColor: theme.colors.primary,
-    paddingBottom: 8,
+  mainContent: {
+    flex: 1,
+    flexDirection: 'row',
+    backgroundColor: theme.colors.background,
   },
-  tabsScrollContent: {
-    paddingHorizontal: 16,
+  categorySidebar: {
+    width: 160,
+    backgroundColor: '#f8f9fa',
+    borderRightWidth: 1,
+    borderRightColor: '#e5e7eb',
+  },
+  sidebarScrollContent: {
+    padding: 8,
   },
   categoryTab: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    marginRight: 12,
-    minWidth: 80,
-    alignItems: 'center',
+    backgroundColor: 'transparent',
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    marginVertical: 2,
+    borderRadius: 8,
+    alignItems: 'flex-start',
   },
   selectedCategoryTab: {
-    backgroundColor: '#f27d42',
+    backgroundColor: theme.colors.primary,
+  },
+  categoryTabContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '100%',
   },
   categoryTabText: {
-    color: 'rgba(255, 255, 255, 0.8)',
-    fontSize: 14,
+    color: theme.colors.text,
+    fontSize: 13,
     fontFamily: theme.fonts.body,
     fontWeight: '600',
+    marginLeft: 8,
+    flex: 1,
   },
   selectedCategoryTabText: {
     color: 'white',
