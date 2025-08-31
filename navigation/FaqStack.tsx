@@ -14,15 +14,15 @@ export default function FaqStack() {
       }}
     >
       <Stack.Screen 
-        name="FaqMain" 
-        component={ConnectScreen}
-        options={{ title: 'FAQ' }}
-      />
+        name="FaqMain"
+      >
+        {(props) => <ConnectScreen {...props} />}
+      </Stack.Screen>
       <Stack.Screen 
-        name="FaqDetail" 
-        component={FaqDetailScreen}
-        options={{ title: 'FAQ Detail' }}
-      />
+        name="FaqDetail"
+      >
+        {(props) => <FaqDetailScreen {...props} />}
+      </Stack.Screen>
     </Stack.Navigator>
   );
 }
