@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import {
   View,
@@ -9,43 +8,47 @@ import {
   SafeAreaView,
   StatusBar,
   ActivityIndicator,
-  ScrollView,
+  SectionList,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { theme } from '../theme';
 import { getFaq, FaqItem } from '../data/getFaq';
 
+interface FaqSection {
+  title: string;
+  data: FaqItem[];
+  icon: string;
+}
+
 export default function ConnectScreen({ navigation }: any) {
-  const [faqData, setFaqData] = useState<FaqItem[]>([]);
+  const [faqSections, setFaqSections] = useState<FaqSection[]>([]);
   const [loading, setLoading] = useState(true);
-  const [categories, setCategories] = useState<string[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState<string>('');
-  const [filteredFaqs, setFilteredFaqs] = useState<FaqItem[]>([]);
 
   useEffect(() => {
     loadFaqData();
   }, []);
 
-  useEffect(() => {
-    if (selectedCategory) {
-      const filtered = faqData.filter(item => item.category === selectedCategory);
-      setFilteredFaqs(filtered);
-    }
-  }, [selectedCategory, faqData]);
-
   const loadFaqData = async () => {
     try {
       const data = await getFaq();
-      setFaqData(data);
-      
-      // Extract unique categories
-      const uniqueCategories = Array.from(new Set(data.map(item => item.category)));
-      setCategories(uniqueCategories);
-      
-      // Set the first category as selected by default
-      if (uniqueCategories.length > 0) {
-        setSelectedCategory(uniqueCategories[0]);
-      }
+
+      // Group FAQ items by category
+      const groupedFaqs = data.reduce((acc: Record<string, FaqItem[]>, item) => {
+        if (!acc[item.category]) {
+          acc[item.category] = [];
+        }
+        acc[item.category].push(item);
+        return acc;
+      }, {});
+
+      // Convert to sections with icons
+      const sections: FaqSection[] = Object.entries(groupedFaqs).map(([category, items]) => ({
+        title: category,
+        data: items,
+        icon: getCategoryIcon(category)
+      }));
+
+      setFaqSections(sections);
     } catch (error) {
       console.error('Error loading FAQ data:', error);
     } finally {
@@ -53,24 +56,9 @@ export default function ConnectScreen({ navigation }: any) {
     }
   };
 
-  const renderFaqItem = ({ item }: { item: FaqItem }) => (
-    <TouchableOpacity
-      style={styles.faqItem}
-      onPress={() => navigation.navigate('FaqDetail', { faqId: item.id })}
-    >
-      <View style={styles.faqContent}>
-        <Text style={styles.faqTitle}>{item.title}</Text>
-        <Text style={styles.faqPreview} numberOfLines={2}>
-          {item.description.replace(/<[^>]*>/g, '')}
-        </Text>
-      </View>
-      <Ionicons name="chevron-forward" size={20} color={theme.colors.muted} />
-    </TouchableOpacity>
-  );
-
   const getCategoryIcon = (category: string) => {
     const categoryLower = category.toLowerCase();
-    if (categoryLower.includes('general')) return 'information-circle-outline';
+    if (categoryLower.includes('general')) return 'settings-outline';
     if (categoryLower.includes('technical') || categoryLower.includes('tech')) return 'construct-outline';
     if (categoryLower.includes('event') || categoryLower.includes('schedule')) return 'calendar-outline';
     if (categoryLower.includes('location') || categoryLower.includes('venue')) return 'location-outline';
@@ -80,34 +68,39 @@ export default function ConnectScreen({ navigation }: any) {
     if (categoryLower.includes('transport') || categoryLower.includes('travel')) return 'car-outline';
     if (categoryLower.includes('contact') || categoryLower.includes('support')) return 'mail-outline';
     if (categoryLower.includes('safety') || categoryLower.includes('security')) return 'shield-outline';
-    return 'help-circle-outline'; // default
+    return 'help-circle-outline';
   };
 
-  const renderCategoryTab = (category: string) => (
+  const renderFaqItem = ({ item, index, section }: { item: FaqItem; index: number; section: FaqSection }) => (
     <TouchableOpacity
-      key={category}
       style={[
-        styles.categoryTab,
-        selectedCategory === category && styles.selectedCategoryTab,
+        styles.faqItem,
+        index === 0 && styles.firstItem,
+        index === section.data.length - 1 && styles.lastItem,
       ]}
-      onPress={() => setSelectedCategory(category)}
+      onPress={() => navigation.navigate('FaqDetail', { faqId: item.id })}
     >
-      <View style={styles.categoryTabContent}>
-        <Ionicons 
-          name={getCategoryIcon(category)} 
-          size={20} 
-          color={selectedCategory === category ? 'white' : 'rgba(255, 255, 255, 0.8)'} 
-        />
-        <Text
-          style={[
-            styles.categoryTabText,
-            selectedCategory === category && styles.selectedCategoryTabText,
-          ]}
-        >
-          {category}
+      <View style={styles.faqContent}>
+        <Text style={styles.faqTitle} numberOfLines={1}>
+          {item.title}
+        </Text>
+        <Text style={styles.faqPreview} numberOfLines={1}>
+          {item.description.replace(/<[^>]*>/g, '')}
         </Text>
       </View>
+      <Ionicons name="chevron-forward-outline" size={18} color="#C7C7CC" />
     </TouchableOpacity>
+  );
+
+  const renderSectionHeader = ({ section }: { section: FaqSection }) => (
+    <View style={styles.sectionHeader}>
+      <View style={styles.sectionHeaderContent}>
+        <View style={styles.iconContainer}>
+          <Ionicons name={section.icon} size={20} color="white" />
+        </View>
+        <Text style={styles.sectionTitle}>{section.title}</Text>
+      </View>
+    </View>
   );
 
   if (loading) {
@@ -115,8 +108,8 @@ export default function ConnectScreen({ navigation }: any) {
       <>
         <StatusBar
           translucent
-          backgroundColor={theme.colors.primary}
-          barStyle="light-content"
+          backgroundColor="transparent"
+          barStyle="dark-content"
           animated={true}
         />
         <View style={[styles.container, styles.loadingContainer]}>
@@ -131,55 +124,27 @@ export default function ConnectScreen({ navigation }: any) {
     <>
       <StatusBar
         translucent
-        backgroundColor={theme.colors.primary}
-        barStyle="light-content"
+        backgroundColor="transparent"
+        barStyle="dark-content"
         animated={true}
       />
-      <View style={{ backgroundColor: theme.colors.primary, flex: 1 }}>
-        <SafeAreaView style={styles.container}>
-          {/* Header */}
-          <View style={styles.header}>
-            <View style={styles.headerTitleContainer}>
-              <Ionicons name="help-circle" size={24} color="white" />
-              <Text style={styles.headerTitle}>Frequently Asked Questions</Text>
-            </View>
-          </View>
+      <SafeAreaView style={styles.container}>
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Settings</Text>
+        </View>
 
-          {/* Main Content Area - Mac-style horizontal layout */}
-          <View style={styles.mainContent}>
-            {/* Category Sidebar */}
-            <View style={styles.categorySidebar}>
-              <ScrollView
-                showsVerticalScrollIndicator={false}
-                contentContainerStyle={styles.sidebarScrollContent}
-              >
-                {categories.map(renderCategoryTab)}
-              </ScrollView>
-            </View>
-
-            {/* FAQ List */}
-            <View style={styles.content}>
-              {filteredFaqs.length > 0 ? (
-                <FlatList
-                  data={filteredFaqs}
-                  renderItem={renderFaqItem}
-                  keyExtractor={(item) => item.id}
-                  showsVerticalScrollIndicator={false}
-                  contentContainerStyle={styles.listContent}
-                />
-              ) : (
-                <View style={styles.noDataContainer}>
-                  <Ionicons name="document-text-outline" size={64} color={theme.colors.muted} />
-                  <Text style={styles.noDataText}>No FAQ items found</Text>
-                  <Text style={styles.noDataSubtext}>
-                    Try selecting a different category
-                  </Text>
-                </View>
-              )}
-            </View>
-          </View>
-        </SafeAreaView>
-      </View>
+        {/* Content */}
+        <SectionList
+          sections={faqSections}
+          renderItem={renderFaqItem}
+          renderSectionHeader={renderSectionHeader}
+          keyExtractor={(item) => item.id}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.listContent}
+          stickySectionHeadersEnabled={false}
+        />
+      </SafeAreaView>
     </>
   );
 }
@@ -187,11 +152,11 @@ export default function ConnectScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#F2F2F7',
   },
   loadingContainer: {
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: theme.colors.background,
   },
   loadingText: {
     marginTop: 16,
@@ -200,119 +165,79 @@ const styles = StyleSheet.create({
     fontFamily: theme.fonts.body,
   },
   header: {
-    backgroundColor: theme.colors.primary,
+    backgroundColor: '#F2F2F7',
     paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  headerTitleContainer: {
-    flexDirection: 'row',
+    paddingTop: 20,
+    paddingBottom: 16,
     alignItems: 'center',
-    justifyContent: 'center',
   },
   headerTitle: {
-    color: 'white',
-    fontSize: 20,
+    color: '#000000',
+    fontSize: 34,
     fontFamily: theme.fonts.heading,
-    fontWeight: '600',
-    marginLeft: 12,
-  },
-  mainContent: {
-    flex: 1,
-    flexDirection: 'row',
-    backgroundColor: theme.colors.background,
-  },
-  categorySidebar: {
-    width: 160,
-    backgroundColor: '#f8f9fa',
-    borderRightWidth: 1,
-    borderRightColor: '#e5e7eb',
-  },
-  sidebarScrollContent: {
-    padding: 8,
-  },
-  categoryTab: {
-    backgroundColor: 'transparent',
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    marginVertical: 2,
-    borderRadius: 8,
-    alignItems: 'flex-start',
-  },
-  selectedCategoryTab: {
-    backgroundColor: theme.colors.primary,
-  },
-  categoryTabContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    width: '100%',
-  },
-  categoryTabText: {
-    color: theme.colors.text,
-    fontSize: 13,
-    fontFamily: theme.fonts.body,
-    fontWeight: '600',
-    marginLeft: 8,
-    flex: 1,
-  },
-  selectedCategoryTabText: {
-    color: 'white',
-  },
-  content: {
-    flex: 1,
-    backgroundColor: theme.colors.background,
+    fontWeight: '700',
   },
   listContent: {
-    padding: 16,
+    paddingBottom: 40,
   },
-  faqItem: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
+  sectionHeader: {
+    backgroundColor: '#F2F2F7',
+    paddingTop: 35,
+    paddingBottom: 8,
+    paddingHorizontal: 16,
+  },
+  sectionHeaderContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+  },
+  iconContainer: {
+    width: 29,
+    height: 29,
+    borderRadius: 6,
+    backgroundColor: theme.colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  sectionTitle: {
+    fontSize: 17,
+    fontFamily: theme.fonts.body,
+    fontWeight: '400',
+    color: '#000000',
+  },
+  faqItem: {
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderBottomWidth: 0.5,
+    borderBottomColor: '#C6C6C8',
+    marginHorizontal: 16,
+  },
+  firstItem: {
+    borderTopLeftRadius: 10,
+    borderTopRightRadius: 10,
+  },
+  lastItem: {
+    borderBottomLeftRadius: 10,
+    borderBottomRightRadius: 10,
+    borderBottomWidth: 0,
   },
   faqContent: {
     flex: 1,
     marginRight: 12,
   },
   faqTitle: {
-    fontSize: 16,
-    fontFamily: theme.fonts.heading,
-    fontWeight: '600',
-    color: theme.colors.text,
-    marginBottom: 4,
+    fontSize: 17,
+    fontFamily: theme.fonts.body,
+    fontWeight: '400',
+    color: '#000000',
+    marginBottom: 2,
   },
   faqPreview: {
-    fontSize: 14,
+    fontSize: 15,
     fontFamily: theme.fonts.body,
-    color: theme.colors.muted,
-    lineHeight: 20,
-  },
-  noDataContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 32,
-  },
-  noDataText: {
-    fontSize: 18,
-    fontFamily: theme.fonts.heading,
-    fontWeight: '600',
-    color: theme.colors.text,
-    marginTop: 16,
-    textAlign: 'center',
-  },
-  noDataSubtext: {
-    fontSize: 14,
-    fontFamily: theme.fonts.body,
-    color: theme.colors.muted,
-    marginTop: 8,
-    textAlign: 'center',
+    color: '#8E8E93',
   },
 });
