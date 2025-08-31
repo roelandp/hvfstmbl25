@@ -6,7 +6,7 @@ import ProgramStack from './ProgramStack';
 import VenueStack from './VenueStack';
 import SightseeingStack from './SightseeingStack';
 import AudioTourScreen from '../screens/AudioTourScreen';
-import ConnectScreen from '../screens/ConnectScreen';
+import FaqStack from './FaqStack';
 
 const Tab = createBottomTabNavigator();
 
@@ -72,11 +72,11 @@ export default function Tabs() {
         }}
       />
       <Tab.Screen
-        name="Connect"
-        component={ConnectScreen}
+        name="FAQ"
+        component={FaqStack}
         options={{
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="chatbubble-ellipses-outline" color={color} size={size} />
+            <Ionicons name="help-circle-outline" color={color} size={size} />
           ),
         }}
       />
