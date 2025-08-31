@@ -13,8 +13,16 @@ export default function FaqStack() {
         headerShown: false,
       }}
     >
-      <Stack.Screen name="FaqMain" component={ConnectScreen} />
-      <Stack.Screen name="FaqDetail" component={FaqDetailScreen} />
+      <Stack.Screen 
+        name="FaqMain" 
+        component={ConnectScreen}
+        options={{ title: 'FAQ' }}
+      />
+      <Stack.Screen 
+        name="FaqDetail" 
+        component={FaqDetailScreen}
+        options={{ title: 'FAQ Detail' }}
+      />
     </Stack.Navigator>
   );
 }

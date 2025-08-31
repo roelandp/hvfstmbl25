@@ -194,7 +194,13 @@ export default function AudioTourScreen() {
 
     return () => {
       statusSubscription?.remove();
-      player.pause();
+      try {
+        if (player.playing) {
+          player.pause();
+        }
+      } catch (error) {
+        console.log('Audio cleanup error (expected on unmount):', error);
+      }
     };
   }, []); // This effect runs once on mount
 
@@ -400,8 +406,12 @@ export default function AudioTourScreen() {
       console.log('Audio URI:', audioUri);
 
       // Stop current audio if playing
-      if (player.playing) {
-        await player.pause();
+      try {
+        if (player.playing) {
+          await player.pause();
+        }
+      } catch (pauseError) {
+        console.log('Pause error (continuing):', pauseError);
       }
 
       // Load and play new audio
@@ -417,6 +427,11 @@ export default function AudioTourScreen() {
 
   const togglePlayPause = async () => {
     try {
+      if (!currentStop) {
+        console.log('No current stop selected');
+        return;
+      }
+      
       if (isPlaying) {
         await player.pause();
         console.log('Audio paused');
@@ -426,6 +441,7 @@ export default function AudioTourScreen() {
       }
     } catch (error) {
       console.error('Error toggling playback:', error);
+      Alert.alert('Audio Error', 'Unable to control audio playback');
     }
   };
 
