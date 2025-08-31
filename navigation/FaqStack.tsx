@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import ConnectScreen from '../screens/ConnectScreen';
+import FaqScreen from '../screens/FaqScreen';
 import FaqDetailScreen from '../screens/FaqDetailScreen';
 
 const Stack = createNativeStackNavigator();
@@ -15,7 +15,7 @@ export default function FaqStack() {
     >
       <Stack.Screen 
         name="FaqMain" 
-        component={ConnectScreen}
+        component={FaqScreen}
       />
       <Stack.Screen 
         name="FaqDetail" 
