@@ -128,23 +128,25 @@ export default function ConnectScreen({ navigation }: any) {
         barStyle="light-content"
         animated={true}
       />
-      <SafeAreaView style={styles.container}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>FAQ</Text>
-        </View>
+      <View style={{ backgroundColor: theme.colors.primary, flex: 1 }}>
+        <SafeAreaView style={styles.container}>
+          {/* Header */}
+          <View style={styles.header}>
+            <Text style={styles.headerTitle}>FAQ</Text>
+          </View>
 
-        {/* Content */}
-        <SectionList
-          sections={faqSections}
-          renderItem={renderFaqItem}
-          renderSectionHeader={renderSectionHeader}
-          keyExtractor={(item) => item.id}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.listContent}
-          stickySectionHeadersEnabled={false}
-        />
-      </SafeAreaView>
+          {/* Content */}
+          <SectionList
+            sections={faqSections}
+            renderItem={renderFaqItem}
+            renderSectionHeader={renderSectionHeader}
+            keyExtractor={(item) => item.id}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.listContent}
+            stickySectionHeadersEnabled={false}
+          />
+        </SafeAreaView>
+      </View>
     </>
   );
 }
