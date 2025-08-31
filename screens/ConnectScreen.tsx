@@ -154,7 +154,7 @@ export default function ConnectScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F2F2F7',
+    backgroundColor: theme.colors.primary,
   },
   loadingContainer: {
     justifyContent: 'center',
