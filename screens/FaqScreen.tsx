@@ -136,15 +136,17 @@ export default function FaqScreen({ navigation }: any) {
           </View>
 
           {/* Content */}
-          <SectionList
-            sections={faqSections}
-            renderItem={renderFaqItem}
-            renderSectionHeader={renderSectionHeader}
-            keyExtractor={(item) => item.id}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.listContent}
-            stickySectionHeadersEnabled={false}
-          />
+          <View style={styles.contentBackground}>
+            <SectionList
+              sections={faqSections}
+              renderItem={renderFaqItem}
+              renderSectionHeader={renderSectionHeader}
+              keyExtractor={(item) => item.id}
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={styles.listContent}
+              stickySectionHeadersEnabled={false}
+            />
+          </View>
         </SafeAreaView>
       </View>
     </>
@@ -181,6 +183,10 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingBottom: 40,
+  },
+  contentBackground: {
+    flex: 1,
+    backgroundColor: '#F2F2F7',
   },
   sectionHeader: {
     backgroundColor: '#F2F2F7',
