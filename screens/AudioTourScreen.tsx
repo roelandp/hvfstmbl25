@@ -478,7 +478,6 @@ export default function AudioTourScreen() {
         <SafeAreaView style={styles.container}>
           {/* Header */}
           <View style={styles.header}>
-            <Ionicons name="headset" size={24} color="white" />
             <Text style={styles.headerTitle}>Audio Tour</Text>
           </View>
 
@@ -595,16 +594,15 @@ const styles = StyleSheet.create({
   header: {
     backgroundColor: theme.colors.primary,
     paddingHorizontal: 16,
-    paddingVertical: 12,
-    flexDirection: 'row',
+    paddingTop: 20,
+    paddingBottom: 16,
     alignItems: 'center',
   },
   headerTitle: {
     color: 'white',
-    fontSize: 20,
+    fontSize: 34,
     fontFamily: theme.fonts.heading,
-    fontWeight: '600',
-    marginLeft: 12,
+    fontWeight: '700',
   },
   mapContainer: {
     flex: 1,

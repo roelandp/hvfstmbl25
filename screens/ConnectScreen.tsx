@@ -108,8 +108,8 @@ export default function ConnectScreen({ navigation }: any) {
       <>
         <StatusBar
           translucent
-          backgroundColor="transparent"
-          barStyle="dark-content"
+          backgroundColor={theme.colors.primary}
+          barStyle="light-content"
           animated={true}
         />
         <View style={[styles.container, styles.loadingContainer]}>
@@ -124,8 +124,8 @@ export default function ConnectScreen({ navigation }: any) {
     <>
       <StatusBar
         translucent
-        backgroundColor="transparent"
-        barStyle="dark-content"
+        backgroundColor={theme.colors.primary}
+        barStyle="light-content"
         animated={true}
       />
       <SafeAreaView style={styles.container}>
