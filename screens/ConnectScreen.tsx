@@ -131,7 +131,7 @@ export default function ConnectScreen({ navigation }: any) {
       <SafeAreaView style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Settings</Text>
+          <Text style={styles.headerTitle}>FAQ</Text>
         </View>
 
         {/* Content */}
@@ -165,14 +165,14 @@ const styles = StyleSheet.create({
     fontFamily: theme.fonts.body,
   },
   header: {
-    backgroundColor: '#F2F2F7',
+    backgroundColor: theme.colors.primary,
     paddingHorizontal: 16,
     paddingTop: 20,
     paddingBottom: 16,
     alignItems: 'center',
   },
   headerTitle: {
-    color: '#000000',
+    color: 'white',
     fontSize: 34,
     fontFamily: theme.fonts.heading,
     fontWeight: '700',
@@ -194,7 +194,7 @@ const styles = StyleSheet.create({
     width: 29,
     height: 29,
     borderRadius: 6,
-    backgroundColor: theme.colors.primary,
+    backgroundColor: theme.colors.accent,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
