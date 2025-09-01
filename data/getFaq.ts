@@ -1,4 +1,3 @@
-
 import { SHEET_BASE } from './config';
 
 export interface FaqItem {
