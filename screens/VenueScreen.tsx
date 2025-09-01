@@ -54,6 +54,7 @@ export default function VenueScreen() {
   // Update user location on map when location changes
   useEffect(() => {
     if (location && webViewRef.current && showUserLocation) {
+      console.log('Sending location update to WebView:', location);
       webViewRef.current.postMessage(JSON.stringify({
         action: 'updateUserLocation',
         latitude: location.latitude,
@@ -217,12 +218,14 @@ export default function VenueScreen() {
                   console.log('Map loaded, user location enabled:', showUserLocation, 'location:', location);
                   if (showUserLocation && location) {
                     console.log('Sending initial location to map:', location);
-                    webViewRef.current?.postMessage(JSON.stringify({
-                      action: 'updateUserLocation',
-                      latitude: location.latitude,
-                      longitude: location.longitude,
-                      heading: location.heading || 0
-                    }));
+                    setTimeout(() => {
+                      webViewRef.current?.postMessage(JSON.stringify({
+                        action: 'updateUserLocation',
+                        latitude: location.latitude,
+                        longitude: location.longitude,
+                        heading: location.heading || 0
+                      }));
+                    }, 1000); // Give WebView time to fully load
                   }
                 }}
               />

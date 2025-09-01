@@ -201,16 +201,36 @@ export function generateAudioTourMapHTML(audioStops: any[], centerLat: number, c
         window.toggleUserLocation = toggleUserLocation;
 
         // Handle messages from React Native
-        document.addEventListener('message', function(event) {
+        window.addEventListener('message', function(event) {
           try {
             const data = JSON.parse(event.data);
+            console.log('WebView received message:', data);
             if (data.action === 'updateUserLocation') {
+              console.log('Updating user location in WebView:', data.latitude, data.longitude, data.heading);
               updateUserLocation(data.latitude, data.longitude, data.heading);
             } else if (data.action === 'toggleUserLocation') {
+              console.log('Toggling user location in WebView:', data.enable);
               toggleUserLocation(data.enable);
             }
           } catch (error) {
             console.error('Error handling message:', error);
+          }
+        });
+
+        // Also handle the message event for React Native WebView
+        document.addEventListener('message', function(event) {
+          try {
+            const data = JSON.parse(event.data);
+            console.log('WebView received document message:', data);
+            if (data.action === 'updateUserLocation') {
+              console.log('Updating user location via document message:', data.latitude, data.longitude, data.heading);
+              updateUserLocation(data.latitude, data.longitude, data.heading);
+            } else if (data.action === 'toggleUserLocation') {
+              console.log('Toggling user location via document message:', data.enable);
+              toggleUserLocation(data.enable);
+            }
+          } catch (error) {
+            console.error('Error handling document message:', error);
           }
         });
     </script>
@@ -360,16 +380,36 @@ export function generateMapHTML(venues: any[], bounds: MapBounds, centerLat: num
         window.toggleUserLocation = toggleUserLocation;
 
         // Handle messages from React Native
-        document.addEventListener('message', function(event) {
+        window.addEventListener('message', function(event) {
           try {
             const data = JSON.parse(event.data);
+            console.log('Audio WebView received message:', data);
             if (data.action === 'updateUserLocation') {
+              console.log('Updating audio tour user location:', data.latitude, data.longitude, data.heading);
               updateUserLocation(data.latitude, data.longitude, data.heading);
             } else if (data.action === 'toggleUserLocation') {
+              console.log('Toggling audio tour user location:', data.enable);
               toggleUserLocation(data.enable);
             }
           } catch (error) {
             console.error('Error handling message:', error);
+          }
+        });
+
+        // Also handle the message event for React Native WebView
+        document.addEventListener('message', function(event) {
+          try {
+            const data = JSON.parse(event.data);
+            console.log('Audio WebView received document message:', data);
+            if (data.action === 'updateUserLocation') {
+              console.log('Updating audio tour user location via document:', data.latitude, data.longitude, data.heading);
+              updateUserLocation(data.latitude, data.longitude, data.heading);
+            } else if (data.action === 'toggleUserLocation') {
+              console.log('Toggling audio tour user location via document:', data.enable);
+              toggleUserLocation(data.enable);
+            }
+          } catch (error) {
+            console.error('Error handling document message:', error);
           }
         });
     </script>
