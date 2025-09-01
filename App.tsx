@@ -38,10 +38,10 @@ export default function App() {
   }
 
   return (
-    <NavigationContainer onReady={onLayoutRootView}>
-      <LocationProvider>
+    <LocationProvider>
+      <NavigationContainer onReady={onLayoutRootView}>
         <Tabs />
-      </LocationProvider>
-    </NavigationContainer>
+      </NavigationContainer>
+    </LocationProvider>
   );
 }

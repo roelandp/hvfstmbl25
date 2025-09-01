@@ -41,11 +41,13 @@ export default function AudioTourScreen() {
   const [duration, setDuration] = useState(0);
   const [gpxRoute, setGpxRoute] = useState<{ lat: number; lon: number }[]>([]);
   
-  // Then useRef
+  // Then useRef hooks
   const webViewRef = useRef<WebView>(null);
   
-  // Then custom hooks
+  // Then custom hooks - these must be called unconditionally
   const { location, showUserLocation, isTracking, hasPermission, toggleLocationTracking } = useGlobalLocation();
+  
+  // Audio player hook - this MUST be called unconditionally
   const player = useAudioPlayer();
 
   useEffect(() => {
