@@ -177,7 +177,7 @@ export function generateAudioTourMapHTML(audioStops: any[], centerLat: number, c
 
           // Create compass arrow icon
           const compassIcon = L.divIcon({
-            html: '<div style="transform: rotate(' + (heading || 0) + 'deg); font-size: 20px; color: #007AFF;">📍</div>',
+            html: '<div style="transform: rotate(' + ((heading || 0) - 90) + 'deg); background-color: #007AFF; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; font-size: 16px; color: white; border: 2px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">➤</div>',
             iconSize: [30, 30],
             iconAnchor: [15, 15],
             className: 'user-location-marker'
@@ -356,7 +356,7 @@ export function generateMapHTML(venues: any[], bounds: MapBounds, centerLat: num
 
           // Create compass arrow icon
           const compassIcon = L.divIcon({
-            html: '<div style="transform: rotate(' + (heading || 0) + 'deg); font-size: 20px; color: #007AFF;">📍</div>',
+            html: '<div style="transform: rotate(' + ((heading || 0) - 90) + 'deg); background-color: #007AFF; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; font-size: 16px; color: white; border: 2px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">➤</div>',
             iconSize: [30, 30],
             iconAnchor: [15, 15],
             className: 'user-location-marker'
