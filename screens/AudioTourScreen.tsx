@@ -13,8 +13,6 @@ import {
 import { WebView } from 'react-native-webview';
 import { Ionicons } from '@expo/vector-icons';
 import { useAudioPlayer, AudioSource, AudioStatus } from 'expo-audio';
-
-const player = useAudioPlayer();
 import { theme } from '../theme';
 import { generateAudioTourMapHTML } from '../utils/mapTileGenerator';
 import { parseGPX } from '../utils/gpxParser';
@@ -44,6 +42,7 @@ export default function AudioTourScreen() {
   const webViewRef = useRef<WebView>(null);
 
   const { location, showUserLocation, isTracking, hasPermission, toggleLocationTracking } = useGlobalLocation();
+  const player = useAudioPlayer();
 
   // State to hold the parsed GPX route data
   const [gpxRoute, setGpxRoute] = useState<{ lat: number; lon: number }[]>([]);
