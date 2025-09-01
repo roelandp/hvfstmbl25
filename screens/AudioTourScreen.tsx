@@ -30,6 +30,7 @@ interface AudioStop {
 const { width } = Dimensions.get('window');
 
 export default function AudioTourScreen() {
+  // All useState hooks first
   const [stops, setStops] = useState<AudioStop[]>([]);
   const [loading, setLoading] = useState(true);
   const [mapHTML, setMapHTML] = useState<string>('');
@@ -40,9 +41,20 @@ export default function AudioTourScreen() {
   const [duration, setDuration] = useState(0);
   const [gpxRoute, setGpxRoute] = useState<{ lat: number; lon: number }[]>([]);
   
+  // Then useRef
   const webViewRef = useRef<WebView>(null);
+  
+  // Then custom hooks
   const { location, showUserLocation, isTracking, hasPermission, toggleLocationTracking } = useGlobalLocation();
-  const player = useAudioPlayer();
+  
+  // Audio player hook with error handling
+  let player;
+  try {
+    player = useAudioPlayer();
+  } catch (error) {
+    console.error('Error initializing audio player:', error);
+    player = null;
+  }
 
   useEffect(() => {
     // Load audio stops and initial GPX data
@@ -182,20 +194,23 @@ export default function AudioTourScreen() {
     loadData();
 
     // Set up audio player event listeners
-    const statusSubscription = player.addListener('playbackStatusUpdate', (status: any) => {
-      console.log('Audio status update:', status);
-      if (status.isLoaded) {
-        // expo-audio uses different property names
-        setIsPlaying(status.playing || false);
-        setCurrentTime(status.currentTime || 0);
-        setDuration(status.duration || 0);
-      }
-    });
+    let statusSubscription;
+    if (player) {
+      statusSubscription = player.addListener('playbackStatusUpdate', (status: any) => {
+        console.log('Audio status update:', status);
+        if (status.isLoaded) {
+          // expo-audio uses different property names
+          setIsPlaying(status.playing || false);
+          setCurrentTime(status.currentTime || 0);
+          setDuration(status.duration || 0);
+        }
+      });
+    }
 
     return () => {
       statusSubscription?.remove();
       try {
-        if (player.playing) {
+        if (player && player.playing) {
           player.pause();
         }
       } catch (error) {
@@ -395,6 +410,11 @@ export default function AudioTourScreen() {
 
   const playAudio = async (stop: AudioStop) => {
     try {
+      if (!player) {
+        Alert.alert('Audio Error', 'Audio player not available');
+        return;
+      }
+
       setCurrentStop(stop);
       setCurrentIndex(parseInt(stop.id) - 1);
 
@@ -440,6 +460,11 @@ export default function AudioTourScreen() {
     try {
       if (!currentStop) {
         console.log('No current stop selected');
+        return;
+      }
+
+      if (!player) {
+        Alert.alert('Audio Error', 'Audio player not available');
         return;
       }
 
@@ -508,7 +533,15 @@ export default function AudioTourScreen() {
             <Text style={styles.headerTitle}>Audio Tour</Text>
             <TouchableOpacity
               style={styles.locationButton}
-              onPress={toggleLocationTracking}
+              onPress={async () => {
+                await toggleLocationTracking();
+                if (webViewRef.current) {
+                  webViewRef.current.postMessage(JSON.stringify({
+                    action: 'toggleUserLocation',
+                    enable: !showUserLocation
+                  }));
+                }
+              }}
             >
               <Ionicons
                 name={showUserLocation ? "location" : "location-outline"}
