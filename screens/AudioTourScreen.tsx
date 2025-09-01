@@ -16,7 +16,6 @@ import { useAudioPlayer, AudioSource, AudioStatus } from 'expo-audio';
 import { theme } from '../theme';
 import { generateAudioTourMapHTML } from '../utils/mapTileGenerator';
 import { parseGPX } from '../utils/gpxParser';
-import { useLocation } from '../utils/useLocation';
 import { useGlobalLocation } from '../contexts/LocationContext';
 
 
@@ -39,13 +38,11 @@ export default function AudioTourScreen() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [gpxRoute, setGpxRoute] = useState<{ lat: number; lon: number }[]>([]);
+  
   const webViewRef = useRef<WebView>(null);
-
   const { location, showUserLocation, isTracking, hasPermission, toggleLocationTracking } = useGlobalLocation();
   const player = useAudioPlayer();
-
-  // State to hold the parsed GPX route data
-  const [gpxRoute, setGpxRoute] = useState<{ lat: number; lon: number }[]>([]);
 
   useEffect(() => {
     // Load audio stops and initial GPX data
