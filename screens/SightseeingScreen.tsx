@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useRef } from 'react';
 import { 
   View, 
@@ -14,8 +15,8 @@ import { WebView } from 'react-native-webview';
 import { Ionicons } from '@expo/vector-icons';
 import { theme } from '../theme';
 import { getSightseeing } from '../data/getSightseeing';
-import { generateSightseeingMapHTML, MapBounds } from '../utils/mapTileGenerator';
-import { useGlobalLocation } from '../contexts/LocationContext';
+import { generateMapHTML, MapBounds } from '../utils/mapTileGenerator';
+import { useLocation } from '../utils/useLocation';
 
 interface Sightseeing {
   id: string;
@@ -34,9 +35,13 @@ export default function SightseeingScreen() {
   const [sightseeing, setSightseeing] = useState<Sightseeing[]>([]);
   const [loading, setLoading] = useState(true);
   const [mapHTML, setMapHTML] = useState<string>('');
+  const [showUserLocation, setShowUserLocation] = useState(false);
   const webViewRef = useRef<WebView>(null);
-
-  const { location, showUserLocation, isTracking, hasPermission, toggleLocationTracking } = useGlobalLocation();
+  
+  const { location, hasPermission, isTracking, startTracking, stopTracking } = useLocation({
+    distanceInterval: 20,
+    enableHighAccuracy: false
+  });
 
   useEffect(() => {
     loadSightseeing();
@@ -45,7 +50,8 @@ export default function SightseeingScreen() {
   const loadSightseeing = async () => {
     try {
       const sightseeingData = await getSightseeing();
-
+      
+      // Parse coordinates from the coordinates field
       const parsedSightseeing = sightseeingData.map(item => {
         if (item.coordinates && typeof item.coordinates === 'string') {
           const coords = item.coordinates.split(',').map(c => parseFloat(c.trim()));
@@ -59,9 +65,10 @@ export default function SightseeingScreen() {
         }
         return item;
       });
-
+      
       setSightseeing(parsedSightseeing);
 
+      // Generate map HTML
       if (parsedSightseeing.length > 0) {
         const sightseeingWithCoords = parsedSightseeing.filter(v => v.latitude && v.longitude);
 
@@ -84,7 +91,7 @@ export default function SightseeingScreen() {
             west: minLng
           };
 
-          const html = generateSightseeingMapHTML(sightseeingWithCoords, bounds, centerLat, centerLng, showUserLocation);
+          const html = generateMapHTML(sightseeingWithCoords, bounds, centerLat, centerLng, showUserLocation);
           setMapHTML(html);
         }
       }
@@ -96,6 +103,7 @@ export default function SightseeingScreen() {
     }
   };
 
+  // Update user location on map when location changes
   useEffect(() => {
     if (location && webViewRef.current && showUserLocation) {
       webViewRef.current.postMessage(JSON.stringify({
@@ -107,13 +115,19 @@ export default function SightseeingScreen() {
     }
   }, [location, showUserLocation]);
 
-  const handleLocationToggle = async () => {
-    await toggleLocationTracking();
-    if (webViewRef.current) {
-      webViewRef.current.postMessage(JSON.stringify({
-        action: 'toggleUserLocation',
-        enable: !showUserLocation
-      }));
+  const toggleLocationTracking = async () => {
+    if (!showUserLocation) {
+      setShowUserLocation(true);
+      await startTracking();
+    } else {
+      setShowUserLocation(false);
+      stopTracking();
+      if (webViewRef.current) {
+        webViewRef.current.postMessage(JSON.stringify({
+          action: 'toggleUserLocation',
+          enable: false
+        }));
+      }
     }
   };
 
@@ -151,7 +165,7 @@ export default function SightseeingScreen() {
             <Text style={styles.headerTitle}>Sightseeing</Text>
             <TouchableOpacity
               style={styles.locationButton}
-              onPress={handleLocationToggle}
+              onPress={toggleLocationTracking}
             >
               <Ionicons 
                 name={showUserLocation ? "location" : "location-outline"} 
@@ -176,6 +190,7 @@ export default function SightseeingScreen() {
                   try {
                     const data = JSON.parse(event.nativeEvent.data);
                     if (data.type === 'venueClick') {
+                      // Navigate to sightseeing detail screen
                       navigation.navigate('SightseeingDetail', {
                         sightseeingName: data.venue.name,
                         sightseeingId: data.venue.id

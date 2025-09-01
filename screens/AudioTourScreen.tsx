@@ -12,12 +12,11 @@ import {
 } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { Ionicons } from '@expo/vector-icons';
-import { useAudioPlayer } from 'expo-audio';
-import type { AudioSource } from 'expo-audio';
+import { useAudioPlayer, AudioSource, AudioStatus } from 'expo-audio';
 import { theme } from '../theme';
 import { generateAudioTourMapHTML } from '../utils/mapTileGenerator';
 import { parseGPX } from '../utils/gpxParser';
-import { useGlobalLocation } from '../contexts/LocationContext';
+import { useLocation } from '../utils/useLocation';
 
 
 interface AudioStop {
@@ -31,7 +30,6 @@ interface AudioStop {
 const { width } = Dimensions.get('window');
 
 export default function AudioTourScreen() {
-  // All useState hooks first
   const [stops, setStops] = useState<AudioStop[]>([]);
   const [loading, setLoading] = useState(true);
   const [mapHTML, setMapHTML] = useState<string>('');
@@ -40,15 +38,17 @@ export default function AudioTourScreen() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
-  const [gpxRoute, setGpxRoute] = useState<{ lat: number; lon: number }[]>([]);
-  
-  // Then useRef hooks
+  const [showUserLocation, setShowUserLocation] = useState(false);
   const webViewRef = useRef<WebView>(null);
-  
-  // Custom hooks - these must be called unconditionally and in the same order
-  const { location, showUserLocation, isTracking, hasPermission, toggleLocationTracking } = useGlobalLocation();
-  
-  // Audio player hook - must be called unconditionally
+
+  // State to hold the parsed GPX route data
+  const [gpxRoute, setGpxRoute] = useState<{ lat: number; lon: number }[]>([]);
+
+  const { location, hasPermission, isTracking, startTracking, stopTracking } = useLocation({
+    distanceInterval: 15, // More frequent for audio tour
+    enableHighAccuracy: false
+  });
+
   const player = useAudioPlayer();
 
   useEffect(() => {
@@ -176,7 +176,7 @@ export default function AudioTourScreen() {
     </trkseg>
   </trk>
 </gpx>`;
-
+        
         const parsedRoute = parseGPX(gpxContent);
         setGpxRoute(parsedRoute);
         console.log('Parsed GPX Route:', parsedRoute.length, 'points');
@@ -366,6 +366,22 @@ export default function AudioTourScreen() {
     }
   }, [location, showUserLocation]);
 
+  const toggleLocationTracking = async () => {
+    if (!showUserLocation) {
+      setShowUserLocation(true);
+      await startTracking();
+    } else {
+      setShowUserLocation(false);
+      stopTracking();
+      if (webViewRef.current) {
+        webViewRef.current.postMessage(JSON.stringify({
+          action: 'toggleUserLocation',
+          enable: false
+        }));
+      }
+    }
+  };
+
   // Static mapping of audio files for require()
   const audioFiles: { [key: string]: any } = {
     '1': require('../assets/audiotour/1.mp3'),
@@ -433,7 +449,7 @@ export default function AudioTourScreen() {
       }
 
       // Load and play new audio
-      await player.replace(audioUri);
+      await player.replace(audioUri as AudioSource);
       await player.play();
 
       console.log('Audio playback started');
@@ -449,7 +465,7 @@ export default function AudioTourScreen() {
         console.log('No current stop selected');
         return;
       }
-
+      
       if (isPlaying) {
         await player.pause();
         console.log('Audio paused');
@@ -515,20 +531,12 @@ export default function AudioTourScreen() {
             <Text style={styles.headerTitle}>Audio Tour</Text>
             <TouchableOpacity
               style={styles.locationButton}
-              onPress={async () => {
-                await toggleLocationTracking();
-                if (webViewRef.current) {
-                  webViewRef.current.postMessage(JSON.stringify({
-                    action: 'toggleUserLocation',
-                    enable: !showUserLocation
-                  }));
-                }
-              }}
+              onPress={toggleLocationTracking}
             >
-              <Ionicons
-                name={showUserLocation ? "location" : "location-outline"}
-                size={24}
-                color={showUserLocation ? theme.colors.accent : "white"}
+              <Ionicons 
+                name={showUserLocation ? "location" : "location-outline"} 
+                size={24} 
+                color={showUserLocation ? theme.colors.accent : "white"} 
               />
             </TouchableOpacity>
           </View>

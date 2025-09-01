@@ -15,7 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { theme } from '../theme';
 import { getVenues } from '../data/getVenues';
 import { generateMapHTML, MapBounds } from '../utils/mapTileGenerator';
-import { useGlobalLocation } from '../contexts/LocationContext';
+import { useLocation } from '../utils/useLocation';
 
 interface Venue {
   id: string;
@@ -32,9 +32,13 @@ export default function VenueScreen() {
   const [venues, setVenues] = useState<Venue[]>([]);
   const [loading, setLoading] = useState(true);
   const [mapHTML, setMapHTML] = useState<string>('');
+  const [showUserLocation, setShowUserLocation] = useState(false);
   const webViewRef = useRef<WebView>(null);
   
-  const { location, showUserLocation, isTracking, hasPermission, toggleLocationTracking } = useGlobalLocation();
+  const { location, hasPermission, isTracking, startTracking, stopTracking } = useLocation({
+    distanceInterval: 20,
+    enableHighAccuracy: false
+  });
 
   useEffect(() => {
     loadVenues();
@@ -60,7 +64,23 @@ export default function VenueScreen() {
     }
   }, [location, showUserLocation]);
 
-  
+  const toggleLocationTracking = async () => {
+    if (!showUserLocation) {
+      console.log('Enabling location tracking...');
+      setShowUserLocation(true);
+      await startTracking();
+    } else {
+      console.log('Disabling location tracking...');
+      setShowUserLocation(false);
+      stopTracking();
+      if (webViewRef.current) {
+        webViewRef.current.postMessage(JSON.stringify({
+          action: 'toggleUserLocation',
+          enable: false
+        }));
+      }
+    }
+  };
 
   const loadVenues = async () => {
     try {

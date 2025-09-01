@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react';
 import * as Location from 'expo-location';
 import { Alert } from 'react-native';
@@ -33,7 +34,7 @@ export function useLocation(options: UseLocationOptions = {}) {
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
       setHasPermission(status === 'granted');
-
+      
       if (status !== 'granted') {
         Alert.alert(
           'Location Access',
@@ -41,7 +42,7 @@ export function useLocation(options: UseLocationOptions = {}) {
           [{ text: 'OK' }]
         );
       }
-
+      
       return status === 'granted';
     } catch (error) {
       console.error('Error requesting location permissions:', error);
