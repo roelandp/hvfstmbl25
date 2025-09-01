@@ -10,14 +10,12 @@
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "cover",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#f7941d"
     },
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
-        "UIBackgroundModes": [
-          "audio"
-        ],
+        "UIBackgroundModes": ["audio"],
         "AVAudioSessionCategory": "AVAudioSessionCategoryPlayback",
         "AVAudioSessionCategoryOptions": [
           "AVAudioSessionCategoryOptionMixWithOthers"
@@ -27,7 +25,7 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#f7941d"
       },
       "edgeToEdgeEnabled": true,
       "permissions": [
@@ -36,11 +34,8 @@
       ]
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/icon.png"
     },
-    "plugins": [
-      "expo-font",
-      "expo-audio"
-    ]
+    "plugins": ["expo-font", "expo-audio"]
   }
 }
