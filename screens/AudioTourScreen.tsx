@@ -46,15 +46,7 @@ export default function AudioTourScreen() {
   
   // Then custom hooks
   const { location, showUserLocation, isTracking, hasPermission, toggleLocationTracking } = useGlobalLocation();
-  
-  // Audio player hook with error handling
-  let player;
-  try {
-    player = useAudioPlayer();
-  } catch (error) {
-    console.error('Error initializing audio player:', error);
-    player = null;
-  }
+  const player = useAudioPlayer();
 
   useEffect(() => {
     // Load audio stops and initial GPX data
@@ -194,23 +186,20 @@ export default function AudioTourScreen() {
     loadData();
 
     // Set up audio player event listeners
-    let statusSubscription;
-    if (player) {
-      statusSubscription = player.addListener('playbackStatusUpdate', (status: any) => {
-        console.log('Audio status update:', status);
-        if (status.isLoaded) {
-          // expo-audio uses different property names
-          setIsPlaying(status.playing || false);
-          setCurrentTime(status.currentTime || 0);
-          setDuration(status.duration || 0);
-        }
-      });
-    }
+    const statusSubscription = player.addListener('playbackStatusUpdate', (status: any) => {
+      console.log('Audio status update:', status);
+      if (status.isLoaded) {
+        // expo-audio uses different property names
+        setIsPlaying(status.playing || false);
+        setCurrentTime(status.currentTime || 0);
+        setDuration(status.duration || 0);
+      }
+    });
 
     return () => {
       statusSubscription?.remove();
       try {
-        if (player && player.playing) {
+        if (player.playing) {
           player.pause();
         }
       } catch (error) {
@@ -410,11 +399,6 @@ export default function AudioTourScreen() {
 
   const playAudio = async (stop: AudioStop) => {
     try {
-      if (!player) {
-        Alert.alert('Audio Error', 'Audio player not available');
-        return;
-      }
-
       setCurrentStop(stop);
       setCurrentIndex(parseInt(stop.id) - 1);
 
@@ -460,11 +444,6 @@ export default function AudioTourScreen() {
     try {
       if (!currentStop) {
         console.log('No current stop selected');
-        return;
-      }
-
-      if (!player) {
-        Alert.alert('Audio Error', 'Audio player not available');
         return;
       }
 
