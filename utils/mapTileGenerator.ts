@@ -213,8 +213,7 @@ export function generateAudioTourMapHTML(audioStops: any[], centerLat: number, c
             console.error('Error handling message:', error);
           }
         });
-      });
-</script>
+    </script>
 </body>
 </html>`;
 }
