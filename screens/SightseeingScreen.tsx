@@ -14,9 +14,8 @@ import { WebView } from 'react-native-webview';
 import { Ionicons } from '@expo/vector-icons';
 import { theme } from '../theme';
 import { getSightseeing } from '../data/getSightseeing';
-import { generateMapHTML, MapBounds } from '../utils/mapTileGenerator';
-import { useLocation } from '../utils/useLocation';
-import { useLocationContext } from '../context/LocationContext';
+import { generateSightseeingMapHTML, MapBounds } from '../utils/mapTileGenerator';
+import { useGlobalLocation } from '../contexts/LocationContext';
 
 interface Sightseeing {
   id: string;
@@ -37,12 +36,7 @@ export default function SightseeingScreen() {
   const [mapHTML, setMapHTML] = useState<string>('');
   const webViewRef = useRef<WebView>(null);
 
-  const { isTracking: isUserTracking, startTracking: startUserTracking, stopTracking: stopUserTracking } = useLocationContext();
-
-  const { location, hasPermission, isTracking, startTracking, stopTracking } = useLocation({
-    distanceInterval: 20,
-    enableHighAccuracy: false
-  });
+  const { location, showUserLocation, isTracking, hasPermission, toggleLocationTracking } = useGlobalLocation();
 
   useEffect(() => {
     loadSightseeing();
@@ -90,7 +84,7 @@ export default function SightseeingScreen() {
             west: minLng
           };
 
-          const html = generateMapHTML(sightseeingWithCoords, bounds, centerLat, centerLng, isUserTracking);
+          const html = generateSightseeingMapHTML(sightseeingWithCoords, bounds, centerLat, centerLng, showUserLocation);
           setMapHTML(html);
         }
       }
@@ -103,7 +97,7 @@ export default function SightseeingScreen() {
   };
 
   useEffect(() => {
-    if (location && webViewRef.current && isUserTracking) {
+    if (location && webViewRef.current && showUserLocation) {
       webViewRef.current.postMessage(JSON.stringify({
         action: 'updateUserLocation',
         latitude: location.latitude,
@@ -111,19 +105,15 @@ export default function SightseeingScreen() {
         heading: location.heading || 0
       }));
     }
-  }, [location, isUserTracking]);
+  }, [location, showUserLocation]);
 
   const handleLocationToggle = async () => {
-    if (isUserTracking) {
-      stopUserTracking();
-      if (webViewRef.current) {
-        webViewRef.current.postMessage(JSON.stringify({
-          action: 'toggleUserLocation',
-          enable: false
-        }));
-      }
-    } else {
-      await startUserTracking();
+    await toggleLocationTracking();
+    if (webViewRef.current) {
+      webViewRef.current.postMessage(JSON.stringify({
+        action: 'toggleUserLocation',
+        enable: !showUserLocation
+      }));
     }
   };
 
@@ -164,9 +154,9 @@ export default function SightseeingScreen() {
               onPress={handleLocationToggle}
             >
               <Ionicons 
-                name={isUserTracking ? "location" : "location-outline"} 
+                name={showUserLocation ? "location" : "location-outline"} 
                 size={24} 
-                color={isUserTracking ? theme.colors.accent : "white"} 
+                color={showUserLocation ? theme.colors.accent : "white"} 
               />
             </TouchableOpacity>
           </View>

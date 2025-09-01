@@ -238,6 +238,185 @@ export function generateAudioTourMapHTML(audioStops: any[], centerLat: number, c
 </html>`;
 }
 
+export function generateSightseeingMapHTML(sightseeing: any[], bounds: MapBounds, centerLat: number, centerLng: number, showUserLocation: boolean = false): string {
+  const sightseeingMarkers = sightseeing.map(item => ({
+    id: item.id,
+    lat: item.latitude,
+    lng: item.longitude,
+    name: item.name,
+    address: item.address || item.description || ''
+  })).filter(v => v.lat && v.lng);
+
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sightseeing Map</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+    <style>
+        body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, sans-serif; }
+        #map { height: 100vh; width: 100vw; }
+        .custom-marker {
+            color: #f27d42;
+            font-size: 24px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .leaflet-popup-content-wrapper {
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        .popup-title {
+            font-weight: bold;
+            color: #062c20;
+            margin-bottom: 4px;
+        }
+        .popup-address {
+            color: #666;
+            font-size: 12px;
+        }
+        .user-location-marker div {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 100%;
+          height: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // Initialize map
+        const map = L.map('map').setView([${centerLat}, ${centerLng}], 14);
+
+        // Add OpenStreetMap tiles with retina support
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap contributors',
+            detectRetina: true
+        }).addTo(map);
+
+        // Remove zoom controls
+        map.zoomControl.remove();
+
+        // Custom marker icon using FontAwesome
+        const customIcon = L.divIcon({
+            className: 'custom-marker',
+            html: '<i class="fas fa-map-marker-alt"></i>',
+            iconSize: [24, 32],
+            iconAnchor: [12, 32],
+            popupAnchor: [0, -32]
+        });
+
+        // Add sightseeing markers
+        const sightseeing = ${JSON.stringify(sightseeingMarkers)};
+        const markers = []; // Keep track of markers
+
+        sightseeing.forEach((item, index) => {
+            const marker = L.marker([item.lat, item.lng], { icon: customIcon })
+                .bindPopup(\`
+                    <div class="popup-title">\${item.name}</div>
+                    <div class="popup-address">\${item.address}</div>
+                \`)
+                .on('click', function() {
+                    // Send sightseeing click data to React Native
+                    window.ReactNativeWebView && window.ReactNativeWebView.postMessage(JSON.stringify({
+                        type: 'venueClick',
+                        venueIndex: index,
+                        venue: item
+                    }));
+                })
+                .addTo(map);
+            markers.push(marker);
+        });
+
+        // Fit map to show all markers
+        if (sightseeing.length > 0) {
+            const group = new L.featureGroup(markers);
+            map.fitBounds(group.getBounds().pad(0.1));
+        }
+
+        // User location marker
+        let userMarker = null;
+        let userLocationEnabled = ${showUserLocation};
+
+        function updateUserLocation(lat, lng, heading) {
+          if (!userLocationEnabled) return;
+
+          if (userMarker) {
+            map.removeLayer(userMarker);
+          }
+
+          // Create compass arrow icon
+          const compassIcon = L.divIcon({
+            html: '<div style="transform: rotate(' + ((heading || 0) - 90) + 'deg); background-color: #007AFF; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; font-size: 16px; color: white; border: 2px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">➤</div>',
+            iconSize: [30, 30],
+            iconAnchor: [15, 15],
+            className: 'user-location-marker'
+          });
+
+          userMarker = L.marker([lat, lng], { icon: compassIcon })
+            .addTo(map)
+            .bindPopup('Your Location');
+        }
+
+        function toggleUserLocation(enable) {
+          userLocationEnabled = enable;
+          if (!enable && userMarker) {
+            map.removeLayer(userMarker);
+            userMarker = null;
+          }
+        }
+
+        // Listen for location updates from React Native
+        window.updateUserLocation = updateUserLocation;
+        window.toggleUserLocation = toggleUserLocation;
+
+        // Handle messages from React Native
+        window.addEventListener('message', function(event) {
+          try {
+            const data = JSON.parse(event.data);
+            console.log('Sightseeing WebView received message:', data);
+            if (data.action === 'updateUserLocation') {
+              console.log('Updating sightseeing user location:', data.latitude, data.longitude, data.heading);
+              updateUserLocation(data.latitude, data.longitude, data.heading);
+            } else if (data.action === 'toggleUserLocation') {
+              console.log('Toggling sightseeing user location:', data.enable);
+              toggleUserLocation(data.enable);
+            }
+          } catch (error) {
+            console.error('Error handling message:', error);
+          }
+        });
+
+        // Also handle the message event for React Native WebView
+        document.addEventListener('message', function(event) {
+          try {
+            const data = JSON.parse(event.data);
+            console.log('Sightseeing WebView received document message:', data);
+            if (data.action === 'updateUserLocation') {
+              console.log('Updating sightseeing user location via document:', data.latitude, data.longitude, data.heading);
+              updateUserLocation(data.latitude, data.longitude, data.heading);
+            } else if (data.action === 'toggleUserLocation') {
+              console.log('Toggling sightseeing user location via document:', data.enable);
+              toggleUserLocation(data.enable);
+            }
+          } catch (error) {
+            console.error('Error handling document message:', error);
+          }
+        });
+    </script>
+</body>
+</html>`;
+}
+
 export function generateMapHTML(venues: any[], bounds: MapBounds, centerLat: number, centerLng: number, showUserLocation: boolean = false): string {
   const venueMarkers = venues.map(venue => ({
     id: venue.id,

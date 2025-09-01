@@ -13,11 +13,13 @@ import {
 import { WebView } from 'react-native-webview';
 import { Ionicons } from '@expo/vector-icons';
 import { useAudioPlayer, AudioSource, AudioStatus } from 'expo-audio';
+
+const player = useAudioPlayer();
 import { theme } from '../theme';
 import { generateAudioTourMapHTML } from '../utils/mapTileGenerator';
 import { parseGPX } from '../utils/gpxParser';
 import { useLocation } from '../utils/useLocation';
-import { useGlobalLocation } from '../utils/useGlobalLocation';
+import { useGlobalLocation } from '../contexts/LocationContext';
 
 
 interface AudioStop {
