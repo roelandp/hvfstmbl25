@@ -2,11 +2,11 @@ import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import { Platform } from 'react-native';
-import ProgramScreen from '../screens/ProgramScreen';
-import VenueScreen from '../screens/VenueScreen';
-import SightseeingScreen from '../screens/SightseeingScreen';
+import ProgramStack from './ProgramStack';
+import VenueStack from './VenueStack';
+import SightseeingStack from './SightseeingStack';
 import AudioTourScreen from '../screens/AudioTourScreen';
-import ConnectScreen from '../screens/ConnectScreen';
+import FaqStack from './FaqStack';
 
 const Tab = createBottomTabNavigator();
 
@@ -37,7 +37,7 @@ export default function Tabs() {
     >
       <Tab.Screen
         name="Program"
-        component={ProgramScreen}
+        component={ProgramStack}
         options={{
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="calendar-outline" color={color} size={size} />
@@ -46,7 +46,7 @@ export default function Tabs() {
       />
       <Tab.Screen
         name="Venue"
-        component={VenueScreen}
+        component={VenueStack}
         options={{
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="location-outline" color={color} size={size} />
@@ -55,7 +55,7 @@ export default function Tabs() {
       />
       <Tab.Screen
         name="Sightseeing"
-        component={SightseeingScreen}
+        component={SightseeingStack}
         options={{
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="map-outline" color={color} size={size} />
@@ -72,11 +72,11 @@ export default function Tabs() {
         }}
       />
       <Tab.Screen
-        name="Connect"
-        component={ConnectScreen}
+        name="FAQ"
+        component={FaqStack}
         options={{
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="chatbubble-ellipses-outline" color={color} size={size} />
+            <Ionicons name="help-circle-outline" color={color} size={size} />
           ),
         }}
       />
