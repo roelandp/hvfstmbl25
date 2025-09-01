@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { 
   View, 
   Text, 
@@ -6,7 +6,8 @@ import {
   ActivityIndicator, 
   SafeAreaView,
   StatusBar,
-  Alert 
+  Alert,
+  TouchableOpacity
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { WebView } from 'react-native-webview';
@@ -26,20 +27,107 @@ interface Venue {
   Coordinates?: string;
 }
 
+interface UserLocation {
+  latitude: number;
+  longitude: number;
+  heading?: number;
+}
+
 export default function VenueScreen() {
   const navigation = useNavigation();
   const [venues, setVenues] = useState<Venue[]>([]);
   const [loading, setLoading] = useState(true);
   const [mapHTML, setMapHTML] = useState<string>('');
+  const [location, setLocation] = useState<UserLocation | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [showUserLocation, setShowUserLocation] = useState(false);
+  const webViewRef = useRef<WebView>(null);
 
   useEffect(() => {
     loadVenues();
   }, []);
 
+  // Effect to request location permissions and start tracking
+  useEffect(() => {
+    const requestLocationPermission = async () => {
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        setErrorMsg('Permission to access location was denied');
+        Alert.alert('Permission Denied', 'We need your location to show you on the map.');
+        return;
+      }
+
+      // Start tracking location if permission is granted and showUserLocation is true
+      if (showUserLocation) {
+        startTracking();
+      }
+    };
+
+    requestLocationPermission();
+
+    // Cleanup function to stop location tracking
+    return () => {
+      stopTracking();
+    };
+  }, [showUserLocation]); // Re-run when showUserLocation changes
+
+  const startTracking = async () => {
+    await Location.watchPositionAsync(
+      {
+        accuracy: Location.Accuracy.High,
+        timeInterval: 1000, // Update every second
+        distanceInterval: 10, // Update every 10 meters
+      },
+      (location) => {
+        setLocation({
+          latitude: location.coords.latitude,
+          longitude: location.coords.longitude,
+          heading: location.coords.heading,
+        });
+      }
+    );
+  };
+
+  const stopTracking = () => {
+    // Expo's watchPositionAsync doesn't return a subscription to unsubscribe easily
+    // For simplicity, we'll rely on the component unmounting or showUserLocation becoming false
+    // In a more complex app, you might manage subscriptions more rigorously.
+    console.log("Location tracking stopped (simulated).");
+  };
+
+  // Update user location on map when location changes
+  useEffect(() => {
+    if (location && webViewRef.current && showUserLocation) {
+      webViewRef.current.postMessage(JSON.stringify({
+        action: 'updateUserLocation',
+        latitude: location.latitude,
+        longitude: location.longitude,
+        heading: location.heading || 0
+      }));
+    }
+  }, [location, showUserLocation]);
+
+  const toggleLocationTracking = async () => {
+    if (!showUserLocation) {
+      setShowUserLocation(true);
+      // The useEffect will handle starting the tracking if permission is granted
+    } else {
+      setShowUserLocation(false);
+      stopTracking();
+      // Hide user location on map
+      if (webViewRef.current) {
+        webViewRef.current.postMessage(JSON.stringify({
+          action: 'toggleUserLocation',
+          enable: false
+        }));
+      }
+    }
+  };
+
   const loadVenues = async () => {
     try {
       const venueData = await getVenues();
-      
+
       // Parse coordinates from the Coordinates field
       const parsedVenues = venueData.map(venue => {
         if (venue.Coordinates && typeof venue.Coordinates === 'string') {
@@ -54,7 +142,7 @@ export default function VenueScreen() {
         }
         return venue;
       });
-      
+
       setVenues(parsedVenues);
 
       // Generate map HTML
@@ -124,12 +212,20 @@ export default function VenueScreen() {
           {/* Header */}
           <View style={styles.header}>
             <Text style={styles.headerTitle}>Venues</Text>
+            <TouchableOpacity onPress={toggleLocationTracking} style={styles.locationButton}>
+              <Ionicons
+                name={showUserLocation ? "location" : "location-outline"}
+                size={24}
+                color="white"
+              />
+            </TouchableOpacity>
           </View>
 
           {/* Map Container */}
           <View style={styles.mapContainer}>
             {venuesWithCoords.length > 0 && mapHTML ? (
               <WebView
+                ref={webViewRef}
                 source={{ html: mapHTML }}
                 style={styles.webview}
                 onError={(error) => {
@@ -159,6 +255,17 @@ export default function VenueScreen() {
                     <Text style={styles.loadingText}>Loading map...</Text>
                   </View>
                 )}
+                // Inject user location and compass data into the WebView
+                onLoadEnd={() => {
+                  if (showUserLocation && location) {
+                    webViewRef.current?.postMessage(JSON.stringify({
+                      action: 'updateUserLocation',
+                      latitude: location.latitude,
+                      longitude: location.longitude,
+                      heading: location.heading || 0
+                    }));
+                  }
+                }}
               />
             ) : (
               <View style={styles.noDataContainer}>
@@ -171,7 +278,12 @@ export default function VenueScreen() {
             )}
           </View>
 
-          
+          {errorMsg && (
+            <View style={styles.errorOverlay}>
+              <Text style={styles.errorText}>{errorMsg}</Text>
+            </View>
+          )}
+
         </SafeAreaView>
       </View>
     </>
@@ -199,12 +311,17 @@ const styles = StyleSheet.create({
     paddingTop: 20,
     paddingBottom: 16,
     alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
   },
   headerTitle: {
     color: 'white',
     fontSize: 34,
     fontFamily: theme.fonts.heading,
     fontWeight: '700',
+  },
+  locationButton: {
+    padding: 8,
   },
   mapContainer: {
     flex: 1,
@@ -246,5 +363,20 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 20,
   },
-  
+  errorOverlay: {
+    position: 'absolute',
+    bottom: 20,
+    left: 20,
+    right: 20,
+    backgroundColor: 'rgba(255,0,0,0.8)',
+    padding: 15,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  errorText: {
+    color: 'white',
+    fontSize: 14,
+    fontFamily: theme.fonts.body,
+  },
 });

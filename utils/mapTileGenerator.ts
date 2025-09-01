@@ -1,4 +1,3 @@
-
 export interface MapTile {
   url: string;
   x: number;
@@ -15,13 +14,13 @@ export interface MapBounds {
 
 export function calculateTilesForBounds(bounds: MapBounds, zoomLevel: number): MapTile[] {
   const tiles: MapTile[] = [];
-  
+
   // Convert lat/lng to tile coordinates
   const minTileX = Math.floor(lngToTileX(bounds.west, zoomLevel));
   const maxTileX = Math.floor(lngToTileX(bounds.east, zoomLevel));
   const minTileY = Math.floor(latToTileY(bounds.north, zoomLevel));
   const maxTileY = Math.floor(latToTileY(bounds.south, zoomLevel));
-  
+
   for (let x = minTileX; x <= maxTileX; x++) {
     for (let y = minTileY; y <= maxTileY; y++) {
       tiles.push({
@@ -32,7 +31,7 @@ export function calculateTilesForBounds(bounds: MapBounds, zoomLevel: number): M
       });
     }
   }
-  
+
   return tiles;
 }
 
@@ -44,7 +43,7 @@ function latToTileY(lat: number, zoom: number): number {
   return (1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * Math.pow(2, zoom);
 }
 
-export function generateAudioTourMapHTML(stops: any[], centerLat: number, centerLng: number, routePoints?: { lat: number; lon: number }[]): string {
+export function generateAudioTourMapHTML(audioStops: any[], centerLat: number, centerLng: number, gpxRoute?: { lat: number; lon: number }[], showUserLocation: boolean = false): string {
   return `
 <!DOCTYPE html>
 <html>
@@ -83,6 +82,13 @@ export function generateAudioTourMapHTML(stops: any[], centerLat: number, center
             color: #062c20;
             margin-bottom: 4px;
         }
+        .user-location-marker div {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 100%;
+          height: 100%;
+        }
     </style>
 </head>
 <body>
@@ -90,19 +96,19 @@ export function generateAudioTourMapHTML(stops: any[], centerLat: number, center
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
         const map = L.map('map').setView([${centerLat}, ${centerLng}], 13);
-        
+
         L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
             attribution: '© OpenStreetMap contributors',
             detectRetina: true
         }).addTo(map);
-        
+
         map.zoomControl.remove();
-        
-        const stops = ${JSON.stringify(stops)};
-        const routePoints = ${JSON.stringify(routePoints || [])};
+
+        const stops = ${JSON.stringify(audioStops)};
+        const routePoints = ${JSON.stringify(gpxRoute || [])};
         const markers = [];
-        
+
         // Add GPX route line if available
         if (routePoints && routePoints.length > 0) {
             const routeLine = L.polyline(routePoints.map(p => [p.lat, p.lon]), {
@@ -112,7 +118,7 @@ export function generateAudioTourMapHTML(stops: any[], centerLat: number, center
                 smoothFactor: 1
             }).addTo(map);
         }
-        
+
         stops.forEach((stop, index) => {
             const marker = L.marker([stop.lat, stop.lon], {
                 icon: L.divIcon({
@@ -127,7 +133,7 @@ export function generateAudioTourMapHTML(stops: any[], centerLat: number, center
             .on('click', function() {
                 markers.forEach(m => m.getElement().classList.remove('active'));
                 this.getElement().classList.add('active');
-                
+
                 window.ReactNativeWebView && window.ReactNativeWebView.postMessage(JSON.stringify({
                     type: 'stopClick',
                     stopIndex: index,
@@ -135,34 +141,85 @@ export function generateAudioTourMapHTML(stops: any[], centerLat: number, center
                 }));
             })
             .addTo(map);
-            
+
             markers.push(marker);
         });
-        
+
         // Fit bounds to include both markers and route
         const allPoints = [...markers];
         if (routePoints && routePoints.length > 0) {
             const routeLine = L.polyline(routePoints.map(p => [p.lat, p.lon]));
             allPoints.push(routeLine);
         }
-        
+
         if (allPoints.length > 0) {
             const group = new L.featureGroup(allPoints);
             map.fitBounds(group.getBounds().pad(0.1));
         }
-        
+
+        // Listen for marker activation from React Native
         window.setActiveMarker = function(index) {
-            markers.forEach(m => m.getElement().classList.remove('active'));
-            if (markers[index]) {
-                markers[index].getElement().classList.add('active');
-            }
+          if (markers[index]) {
+            markers[index].openPopup();
+          }
         };
-    </script>
+
+        // User location marker
+        let userMarker = null;
+        let userLocationEnabled = ${showUserLocation};
+
+        function updateUserLocation(lat, lng, heading) {
+          if (!userLocationEnabled) return;
+
+          if (userMarker) {
+            map.removeLayer(userMarker);
+          }
+
+          // Create compass arrow icon
+          const compassIcon = L.divIcon({
+            html: '<div style="transform: rotate(' + (heading || 0) + 'deg); font-size: 20px; color: #007AFF;">📍</div>',
+            iconSize: [30, 30],
+            iconAnchor: [15, 15],
+            className: 'user-location-marker'
+          });
+
+          userMarker = L.marker([lat, lng], { icon: compassIcon })
+            .addTo(map)
+            .bindPopup('Your Location');
+        }
+
+        function toggleUserLocation(enable) {
+          userLocationEnabled = enable;
+          if (!enable && userMarker) {
+            map.removeLayer(userMarker);
+            userMarker = null;
+          }
+        }
+
+        // Listen for location updates from React Native
+        window.updateUserLocation = updateUserLocation;
+        window.toggleUserLocation = toggleUserLocation;
+
+        // Handle messages from React Native
+        document.addEventListener('message', function(event) {
+          try {
+            const data = JSON.parse(event.data);
+            if (data.action === 'updateUserLocation') {
+              updateUserLocation(data.latitude, data.longitude, data.heading);
+            } else if (data.action === 'toggleUserLocation') {
+              toggleUserLocation(data.enable);
+            }
+          } catch (error) {
+            console.error('Error handling message:', error);
+          }
+        });
+      });
+</script>
 </body>
 </html>`;
 }
 
-export function generateMapHTML(venues: any[], bounds: MapBounds, centerLat: number, centerLng: number): string {
+export function generateMapHTML(venues: any[], bounds: MapBounds, centerLat: number, centerLng: number, showUserLocation: boolean = false): string {
   const venueMarkers = venues.map(venue => ({
     id: venue.id,
     lat: venue.latitude,
@@ -204,6 +261,13 @@ export function generateMapHTML(venues: any[], bounds: MapBounds, centerLat: num
             color: #666;
             font-size: 12px;
         }
+        .user-location-marker div {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 100%;
+          height: 100%;
+        }
     </style>
 </head>
 <body>
@@ -212,17 +276,17 @@ export function generateMapHTML(venues: any[], bounds: MapBounds, centerLat: num
     <script>
         // Initialize map
         const map = L.map('map').setView([${centerLat}, ${centerLng}], 14);
-        
+
         // Add OpenStreetMap tiles with retina support
         L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
             attribution: '© OpenStreetMap contributors',
             detectRetina: true
         }).addTo(map);
-        
+
         // Remove zoom controls
         map.zoomControl.remove();
-        
+
         // Custom marker icon using FontAwesome
         const customIcon = L.divIcon({
             className: 'custom-marker',
@@ -231,9 +295,11 @@ export function generateMapHTML(venues: any[], bounds: MapBounds, centerLat: num
             iconAnchor: [12, 32],
             popupAnchor: [0, -32]
         });
-        
+
         // Add venue markers
         const venues = ${JSON.stringify(venueMarkers)};
+        const markers = []; // Keep track of markers
+
         venues.forEach((venue, index) => {
             const marker = L.marker([venue.lat, venue.lng], { icon: customIcon })
                 .bindPopup(\`
@@ -249,17 +315,63 @@ export function generateMapHTML(venues: any[], bounds: MapBounds, centerLat: num
                     }));
                 })
                 .addTo(map);
+            markers.push(marker);
         });
-        
+
         // Fit map to show all markers
         if (venues.length > 0) {
-            const group = new L.featureGroup(map._layers);
+            const group = new L.featureGroup(markers);
             map.fitBounds(group.getBounds().pad(0.1));
         }
-        
-        // Handle clicks to send data back to React Native
-        window.addEventListener('message', function(event) {
-            // Handle messages from React Native if needed
+
+        // User location marker
+        let userMarker = null;
+        let userLocationEnabled = ${showUserLocation};
+
+        function updateUserLocation(lat, lng, heading) {
+          if (!userLocationEnabled) return;
+
+          if (userMarker) {
+            map.removeLayer(userMarker);
+          }
+
+          // Create compass arrow icon
+          const compassIcon = L.divIcon({
+            html: '<div style="transform: rotate(' + (heading || 0) + 'deg); font-size: 20px; color: #007AFF;">📍</div>',
+            iconSize: [30, 30],
+            iconAnchor: [15, 15],
+            className: 'user-location-marker'
+          });
+
+          userMarker = L.marker([lat, lng], { icon: compassIcon })
+            .addTo(map)
+            .bindPopup('Your Location');
+        }
+
+        function toggleUserLocation(enable) {
+          userLocationEnabled = enable;
+          if (!enable && userMarker) {
+            map.removeLayer(userMarker);
+            userMarker = null;
+          }
+        }
+
+        // Listen for location updates from React Native
+        window.updateUserLocation = updateUserLocation;
+        window.toggleUserLocation = toggleUserLocation;
+
+        // Handle messages from React Native
+        document.addEventListener('message', function(event) {
+          try {
+            const data = JSON.parse(event.data);
+            if (data.action === 'updateUserLocation') {
+              updateUserLocation(data.latitude, data.longitude, data.heading);
+            } else if (data.action === 'toggleUserLocation') {
+              toggleUserLocation(data.enable);
+            }
+          } catch (error) {
+            console.error('Error handling message:', error);
+          }
         });
     </script>
 </body>

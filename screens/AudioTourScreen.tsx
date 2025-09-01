@@ -16,6 +16,7 @@ import { useAudioPlayer, AudioSource, AudioStatus } from 'expo-audio';
 import { theme } from '../theme';
 import { generateAudioTourMapHTML } from '../utils/mapTileGenerator';
 import { parseGPX } from '../utils/gpxParser';
+import { useLocation } from '../utils/useLocation';
 
 
 interface AudioStop {
@@ -37,10 +38,16 @@ export default function AudioTourScreen() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [showUserLocation, setShowUserLocation] = useState(false);
   const webViewRef = useRef<WebView>(null);
 
   // State to hold the parsed GPX route data
   const [gpxRoute, setGpxRoute] = useState<{ lat: number; lon: number }[]>([]);
+
+  const { location, hasPermission, isTracking, startTracking, stopTracking } = useLocation({
+    distanceInterval: 15, // More frequent for audio tour
+    enableHighAccuracy: false
+  });
 
   const player = useAudioPlayer();
 
@@ -306,7 +313,7 @@ export default function AudioTourScreen() {
       // NOTE: You must update ../utils/mapTileGenerator.ts to accept and use the 'gpxRoute' parameter.
       // For example, its signature might become:
       // generateAudioTourMapHTML(audioStops: AudioStop[], centerLat: number, centerLng: number, gpxRoute?: { lat: number; lon: number }[]): string
-      const html = generateAudioTourMapHTML(stops, centerLat, centerLng, gpxRoute);
+      const html = generateAudioTourMapHTML(stops, centerLat, centerLng, gpxRoute, showUserLocation);
       setMapHTML(html);
       setLoading(false); // Set loading to false once map is generated
     } else if (stops.length > 0 && gpxRoute.length === 0) {
@@ -324,7 +331,7 @@ export default function AudioTourScreen() {
 
       const centerLat = (Math.min(...latitudes) + Math.max(...latitudes)) / 2;
       const centerLng = (Math.min(...longitudes) + Math.max(...longitudes)) / 2;
-      const html = generateAudioTourMapHTML(stops, centerLat, centerLng); // No GPX data
+      const html = generateAudioTourMapHTML(stops, centerLat, centerLng, undefined, showUserLocation); // No GPX data
       setMapHTML(html);
       setLoading(false);
     } else if (stops.length === 0) {
@@ -337,7 +344,7 @@ export default function AudioTourScreen() {
           const centerLng = (Math.min(...longitudes) + Math.max(...longitudes)) / 2;
           // Assuming generateAudioTourMapHTML can accept only GPX route if no stops
           // This might require an update to mapTileGenerator
-          const html = generateAudioTourMapHTML([], centerLat, centerLng, gpxRoute);
+          const html = generateAudioTourMapHTML([], centerLat, centerLng, gpxRoute, showUserLocation);
           setMapHTML(html);
       } else {
           console.log('No stops or GPX data available to generate map.');
@@ -347,6 +354,33 @@ export default function AudioTourScreen() {
     }
   }, [stops, gpxRoute]); // Re-run when stops or gpxRoute change
 
+  // Update user location on map when location changes
+  useEffect(() => {
+    if (location && webViewRef.current && showUserLocation) {
+      webViewRef.current.postMessage(JSON.stringify({
+        action: 'updateUserLocation',
+        latitude: location.latitude,
+        longitude: location.longitude,
+        heading: location.heading || 0
+      }));
+    }
+  }, [location, showUserLocation]);
+
+  const toggleLocationTracking = async () => {
+    if (!showUserLocation) {
+      setShowUserLocation(true);
+      await startTracking();
+    } else {
+      setShowUserLocation(false);
+      stopTracking();
+      if (webViewRef.current) {
+        webViewRef.current.postMessage(JSON.stringify({
+          action: 'toggleUserLocation',
+          enable: false
+        }));
+      }
+    }
+  };
 
   // Static mapping of audio files for require()
   const audioFiles: { [key: string]: any } = {
@@ -495,6 +529,16 @@ export default function AudioTourScreen() {
           {/* Header */}
           <View style={styles.header}>
             <Text style={styles.headerTitle}>Audio Tour</Text>
+            <TouchableOpacity
+              style={styles.locationButton}
+              onPress={toggleLocationTracking}
+            >
+              <Ionicons 
+                name={showUserLocation ? "location" : "location-outline"} 
+                size={24} 
+                color={showUserLocation ? theme.colors.accent : "white"} 
+              />
+            </TouchableOpacity>
           </View>
 
           {/* Map Container */}
@@ -613,12 +657,21 @@ const styles = StyleSheet.create({
     paddingTop: 20,
     paddingBottom: 16,
     alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
   },
   headerTitle: {
     color: 'white',
     fontSize: 34,
     fontFamily: theme.fonts.heading,
     fontWeight: '700',
+    flex: 1,
+    textAlign: 'center',
+  },
+  locationButton: {
+    padding: 8,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.1)',
   },
   mapContainer: {
     flex: 1,

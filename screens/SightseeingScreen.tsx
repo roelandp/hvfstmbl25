@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { 
   View, 
   Text, 
@@ -7,7 +7,8 @@ import {
   ActivityIndicator, 
   SafeAreaView,
   StatusBar,
-  Alert 
+  Alert,
+  TouchableOpacity 
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { WebView } from 'react-native-webview';
@@ -15,6 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { theme } from '../theme';
 import { getSightseeing } from '../data/getSightseeing';
 import { generateMapHTML, MapBounds } from '../utils/mapTileGenerator';
+import { useLocation } from '../utils/useLocation';
 
 interface Sightseeing {
   id: string;
@@ -33,6 +35,13 @@ export default function SightseeingScreen() {
   const [sightseeing, setSightseeing] = useState<Sightseeing[]>([]);
   const [loading, setLoading] = useState(true);
   const [mapHTML, setMapHTML] = useState<string>('');
+  const [showUserLocation, setShowUserLocation] = useState(false);
+  const webViewRef = useRef<WebView>(null);
+  
+  const { location, hasPermission, isTracking, startTracking, stopTracking } = useLocation({
+    distanceInterval: 20,
+    enableHighAccuracy: false
+  });
 
   useEffect(() => {
     loadSightseeing();
@@ -82,7 +91,7 @@ export default function SightseeingScreen() {
             west: minLng
           };
 
-          const html = generateMapHTML(sightseeingWithCoords, bounds, centerLat, centerLng);
+          const html = generateMapHTML(sightseeingWithCoords, bounds, centerLat, centerLng, showUserLocation);
           setMapHTML(html);
         }
       }
@@ -91,6 +100,34 @@ export default function SightseeingScreen() {
       Alert.alert('Error', 'Failed to load sightseeing data');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Update user location on map when location changes
+  useEffect(() => {
+    if (location && webViewRef.current && showUserLocation) {
+      webViewRef.current.postMessage(JSON.stringify({
+        action: 'updateUserLocation',
+        latitude: location.latitude,
+        longitude: location.longitude,
+        heading: location.heading || 0
+      }));
+    }
+  }, [location, showUserLocation]);
+
+  const toggleLocationTracking = async () => {
+    if (!showUserLocation) {
+      setShowUserLocation(true);
+      await startTracking();
+    } else {
+      setShowUserLocation(false);
+      stopTracking();
+      if (webViewRef.current) {
+        webViewRef.current.postMessage(JSON.stringify({
+          action: 'toggleUserLocation',
+          enable: false
+        }));
+      }
     }
   };
 
@@ -126,12 +163,23 @@ export default function SightseeingScreen() {
           {/* Header */}
           <View style={styles.header}>
             <Text style={styles.headerTitle}>Sightseeing</Text>
+            <TouchableOpacity
+              style={styles.locationButton}
+              onPress={toggleLocationTracking}
+            >
+              <Ionicons 
+                name={showUserLocation ? "location" : "location-outline"} 
+                size={24} 
+                color={showUserLocation ? theme.colors.accent : "white"} 
+              />
+            </TouchableOpacity>
           </View>
 
           {/* Map Container */}
           <View style={styles.mapContainer}>
             {sightseeingWithCoords.length > 0 && mapHTML ? (
               <WebView
+                ref={webViewRef}
                 source={{ html: mapHTML }}
                 style={styles.webview}
                 onError={(error) => {
@@ -199,12 +247,21 @@ const styles = StyleSheet.create({
     paddingTop: 20,
     paddingBottom: 16,
     alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
   },
   headerTitle: {
     color: 'white',
     fontSize: 34,
     fontFamily: theme.fonts.heading,
     fontWeight: '700',
+    flex: 1,
+    textAlign: 'center',
+  },
+  locationButton: {
+    padding: 8,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.1)',
   },
   mapContainer: {
     flex: 1,
