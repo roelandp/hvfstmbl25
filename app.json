@@ -19,7 +19,9 @@
         "AVAudioSessionCategory": "AVAudioSessionCategoryPlayback",
         "AVAudioSessionCategoryOptions": [
           "AVAudioSessionCategoryOptionMixWithOthers"
-        ]
+        ],
+        "NSLocationWhenInUseUsageDescription": "This app uses location to show your position on maps and provide location-based features.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "This app uses location to show your position on maps and provide location-based features."
       }
     },
     "android": {
@@ -30,7 +32,9 @@
       "edgeToEdgeEnabled": true,
       "permissions": [
         "android.permission.RECORD_AUDIO",
-        "android.permission.MODIFY_AUDIO_SETTINGS"
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION"
       ]
     },
     "web": {
