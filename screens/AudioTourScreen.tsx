@@ -17,6 +17,7 @@ import { theme } from '../theme';
 import { generateAudioTourMapHTML } from '../utils/mapTileGenerator';
 import { parseGPX } from '../utils/gpxParser';
 import { useLocation } from '../utils/useLocation';
+import { useGlobalLocation } from '../utils/useGlobalLocation';
 
 
 interface AudioStop {
@@ -38,18 +39,12 @@ export default function AudioTourScreen() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
-  const [showUserLocation, setShowUserLocation] = useState(false);
   const webViewRef = useRef<WebView>(null);
+
+  const { location, showUserLocation, isTracking, hasPermission, toggleLocationTracking } = useGlobalLocation();
 
   // State to hold the parsed GPX route data
   const [gpxRoute, setGpxRoute] = useState<{ lat: number; lon: number }[]>([]);
-
-  const { location, hasPermission, isTracking, startTracking, stopTracking } = useLocation({
-    distanceInterval: 15, // More frequent for audio tour
-    enableHighAccuracy: false
-  });
-
-  const player = useAudioPlayer();
 
   useEffect(() => {
     // Load audio stops and initial GPX data
@@ -176,7 +171,7 @@ export default function AudioTourScreen() {
     </trkseg>
   </trk>
 </gpx>`;
-        
+
         const parsedRoute = parseGPX(gpxContent);
         setGpxRoute(parsedRoute);
         console.log('Parsed GPX Route:', parsedRoute.length, 'points');
@@ -366,22 +361,6 @@ export default function AudioTourScreen() {
     }
   }, [location, showUserLocation]);
 
-  const toggleLocationTracking = async () => {
-    if (!showUserLocation) {
-      setShowUserLocation(true);
-      await startTracking();
-    } else {
-      setShowUserLocation(false);
-      stopTracking();
-      if (webViewRef.current) {
-        webViewRef.current.postMessage(JSON.stringify({
-          action: 'toggleUserLocation',
-          enable: false
-        }));
-      }
-    }
-  };
-
   // Static mapping of audio files for require()
   const audioFiles: { [key: string]: any } = {
     '1': require('../assets/audiotour/1.mp3'),
@@ -465,7 +444,7 @@ export default function AudioTourScreen() {
         console.log('No current stop selected');
         return;
       }
-      
+
       if (isPlaying) {
         await player.pause();
         console.log('Audio paused');
@@ -533,10 +512,10 @@ export default function AudioTourScreen() {
               style={styles.locationButton}
               onPress={toggleLocationTracking}
             >
-              <Ionicons 
-                name={showUserLocation ? "location" : "location-outline"} 
-                size={24} 
-                color={showUserLocation ? theme.colors.accent : "white"} 
+              <Ionicons
+                name={showUserLocation ? "location" : "location-outline"}
+                size={24}
+                color={showUserLocation ? theme.colors.accent : "white"}
               />
             </TouchableOpacity>
           </View>

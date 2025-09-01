@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useRef } from 'react';
 import { 
   View, 
@@ -17,6 +16,7 @@ import { theme } from '../theme';
 import { getSightseeing } from '../data/getSightseeing';
 import { generateMapHTML, MapBounds } from '../utils/mapTileGenerator';
 import { useLocation } from '../utils/useLocation';
+import { useLocationContext } from '../context/LocationContext';
 
 interface Sightseeing {
   id: string;
@@ -35,9 +35,10 @@ export default function SightseeingScreen() {
   const [sightseeing, setSightseeing] = useState<Sightseeing[]>([]);
   const [loading, setLoading] = useState(true);
   const [mapHTML, setMapHTML] = useState<string>('');
-  const [showUserLocation, setShowUserLocation] = useState(false);
   const webViewRef = useRef<WebView>(null);
-  
+
+  const { isTracking: isUserTracking, startTracking: startUserTracking, stopTracking: stopUserTracking } = useLocationContext();
+
   const { location, hasPermission, isTracking, startTracking, stopTracking } = useLocation({
     distanceInterval: 20,
     enableHighAccuracy: false
@@ -50,8 +51,7 @@ export default function SightseeingScreen() {
   const loadSightseeing = async () => {
     try {
       const sightseeingData = await getSightseeing();
-      
-      // Parse coordinates from the coordinates field
+
       const parsedSightseeing = sightseeingData.map(item => {
         if (item.coordinates && typeof item.coordinates === 'string') {
           const coords = item.coordinates.split(',').map(c => parseFloat(c.trim()));
@@ -65,10 +65,9 @@ export default function SightseeingScreen() {
         }
         return item;
       });
-      
+
       setSightseeing(parsedSightseeing);
 
-      // Generate map HTML
       if (parsedSightseeing.length > 0) {
         const sightseeingWithCoords = parsedSightseeing.filter(v => v.latitude && v.longitude);
 
@@ -91,7 +90,7 @@ export default function SightseeingScreen() {
             west: minLng
           };
 
-          const html = generateMapHTML(sightseeingWithCoords, bounds, centerLat, centerLng, showUserLocation);
+          const html = generateMapHTML(sightseeingWithCoords, bounds, centerLat, centerLng, isUserTracking);
           setMapHTML(html);
         }
       }
@@ -103,9 +102,8 @@ export default function SightseeingScreen() {
     }
   };
 
-  // Update user location on map when location changes
   useEffect(() => {
-    if (location && webViewRef.current && showUserLocation) {
+    if (location && webViewRef.current && isUserTracking) {
       webViewRef.current.postMessage(JSON.stringify({
         action: 'updateUserLocation',
         latitude: location.latitude,
@@ -113,21 +111,19 @@ export default function SightseeingScreen() {
         heading: location.heading || 0
       }));
     }
-  }, [location, showUserLocation]);
+  }, [location, isUserTracking]);
 
-  const toggleLocationTracking = async () => {
-    if (!showUserLocation) {
-      setShowUserLocation(true);
-      await startTracking();
-    } else {
-      setShowUserLocation(false);
-      stopTracking();
+  const handleLocationToggle = async () => {
+    if (isUserTracking) {
+      stopUserTracking();
       if (webViewRef.current) {
         webViewRef.current.postMessage(JSON.stringify({
           action: 'toggleUserLocation',
           enable: false
         }));
       }
+    } else {
+      await startUserTracking();
     }
   };
 
@@ -165,12 +161,12 @@ export default function SightseeingScreen() {
             <Text style={styles.headerTitle}>Sightseeing</Text>
             <TouchableOpacity
               style={styles.locationButton}
-              onPress={toggleLocationTracking}
+              onPress={handleLocationToggle}
             >
               <Ionicons 
-                name={showUserLocation ? "location" : "location-outline"} 
+                name={isUserTracking ? "location" : "location-outline"} 
                 size={24} 
-                color={showUserLocation ? theme.colors.accent : "white"} 
+                color={isUserTracking ? theme.colors.accent : "white"} 
               />
             </TouchableOpacity>
           </View>
@@ -190,7 +186,6 @@ export default function SightseeingScreen() {
                   try {
                     const data = JSON.parse(event.nativeEvent.data);
                     if (data.type === 'venueClick') {
-                      // Navigate to sightseeing detail screen
                       navigation.navigate('SightseeingDetail', {
                         sightseeingName: data.venue.name,
                         sightseeingId: data.venue.id
