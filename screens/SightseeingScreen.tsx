@@ -16,7 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { theme } from '../theme';
 import { getSightseeing } from '../data/getSightseeing';
 import { generateMapHTML, MapBounds } from '../utils/mapTileGenerator';
-import { useLocation } from '../utils/useLocation';
+import { useGlobalLocation } from '../contexts/LocationContext';
 
 interface Sightseeing {
   id: string;
@@ -35,17 +35,20 @@ export default function SightseeingScreen() {
   const [sightseeing, setSightseeing] = useState<Sightseeing[]>([]);
   const [loading, setLoading] = useState(true);
   const [mapHTML, setMapHTML] = useState<string>('');
-  const [showUserLocation, setShowUserLocation] = useState(false);
   const webViewRef = useRef<WebView>(null);
   
-  const { location, hasPermission, isTracking, startTracking, stopTracking } = useLocation({
-    distanceInterval: 20,
-    enableHighAccuracy: false
-  });
+  const { location, showUserLocation, isTracking, hasPermission, toggleLocationTracking } = useGlobalLocation();
 
   useEffect(() => {
     loadSightseeing();
   }, []);
+
+  // Regenerate map when showUserLocation changes
+  useEffect(() => {
+    if (sightseeing.length > 0) {
+      generateMapForSightseeing();
+    }
+  }, [sightseeing, showUserLocation]);
 
   const loadSightseeing = async () => {
     try {
@@ -67,34 +70,6 @@ export default function SightseeingScreen() {
       });
       
       setSightseeing(parsedSightseeing);
-
-      // Generate map HTML
-      if (parsedSightseeing.length > 0) {
-        const sightseeingWithCoords = parsedSightseeing.filter(v => v.latitude && v.longitude);
-
-        if (sightseeingWithCoords.length > 0) {
-          const latitudes = sightseeingWithCoords.map(v => v.latitude!);
-          const longitudes = sightseeingWithCoords.map(v => v.longitude!);
-
-          const minLat = Math.min(...latitudes);
-          const maxLat = Math.max(...latitudes);
-          const minLng = Math.min(...longitudes);
-          const maxLng = Math.max(...longitudes);
-
-          const centerLat = (minLat + maxLat) / 2;
-          const centerLng = (minLng + maxLng) / 2;
-
-          const bounds: MapBounds = {
-            north: maxLat,
-            south: minLat,
-            east: maxLng,
-            west: minLng
-          };
-
-          const html = generateMapHTML(sightseeingWithCoords, bounds, centerLat, centerLng, showUserLocation);
-          setMapHTML(html);
-        }
-      }
     } catch (error) {
       console.error('Error loading sightseeing:', error);
       Alert.alert('Error', 'Failed to load sightseeing data');
@@ -103,9 +78,38 @@ export default function SightseeingScreen() {
     }
   };
 
+  const generateMapForSightseeing = () => {
+    const sightseeingWithCoords = sightseeing.filter(v => v.latitude && v.longitude);
+
+    if (sightseeingWithCoords.length > 0) {
+      const latitudes = sightseeingWithCoords.map(v => v.latitude!);
+      const longitudes = sightseeingWithCoords.map(v => v.longitude!);
+
+      const minLat = Math.min(...latitudes);
+      const maxLat = Math.max(...latitudes);
+      const minLng = Math.min(...longitudes);
+      const maxLng = Math.max(...longitudes);
+
+      const centerLat = (minLat + maxLat) / 2;
+      const centerLng = (minLng + maxLng) / 2;
+
+      const bounds: MapBounds = {
+        north: maxLat,
+        south: minLat,
+        east: maxLng,
+        west: minLng
+      };
+
+      console.log('Generating sightseeing map with user location:', showUserLocation);
+      const html = generateMapHTML(sightseeingWithCoords, bounds, centerLat, centerLng, showUserLocation);
+      setMapHTML(html);
+    }
+  };
+
   // Update user location on map when location changes
   useEffect(() => {
     if (location && webViewRef.current && showUserLocation) {
+      console.log('Sending location update to SightseeingScreen WebView:', location);
       webViewRef.current.postMessage(JSON.stringify({
         action: 'updateUserLocation',
         latitude: location.latitude,
@@ -114,22 +118,6 @@ export default function SightseeingScreen() {
       }));
     }
   }, [location, showUserLocation]);
-
-  const toggleLocationTracking = async () => {
-    if (!showUserLocation) {
-      setShowUserLocation(true);
-      await startTracking();
-    } else {
-      setShowUserLocation(false);
-      stopTracking();
-      if (webViewRef.current) {
-        webViewRef.current.postMessage(JSON.stringify({
-          action: 'toggleUserLocation',
-          enable: false
-        }));
-      }
-    }
-  };
 
   if (loading) {
     return (
@@ -209,6 +197,20 @@ export default function SightseeingScreen() {
                     <Text style={styles.loadingText}>Loading map...</Text>
                   </View>
                 )}
+                onLoadEnd={() => {
+                  console.log('Sightseeing map loaded, user location enabled:', showUserLocation, 'location:', location);
+                  if (showUserLocation && location) {
+                    console.log('Sending initial location to sightseeing map:', location);
+                    setTimeout(() => {
+                      webViewRef.current?.postMessage(JSON.stringify({
+                        action: 'updateUserLocation',
+                        latitude: location.latitude,
+                        longitude: location.longitude,
+                        heading: location.heading || 0
+                      }));
+                    }, 1000); // Give WebView time to fully load
+                  }
+                }}
               />
             ) : (
               <View style={styles.noDataContainer}>
