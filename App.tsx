@@ -3,7 +3,6 @@ import { NavigationContainer } from '@react-navigation/native';
 import * as SplashScreen from 'expo-splash-screen';
 import * as Font from 'expo-font';
 import Tabs from './navigation/Tabs';
-import { LocationProvider } from './contexts/LocationContext';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -39,9 +38,7 @@ export default function App() {
 
   return (
     <NavigationContainer onReady={onLayoutRootView}>
-      <LocationProvider>
-        <Tabs />
-      </LocationProvider>
+      <Tabs />
     </NavigationContainer>
   );
 }
