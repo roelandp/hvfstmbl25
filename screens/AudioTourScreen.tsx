@@ -17,7 +17,7 @@ import { theme } from "../theme";
 import { generateAudioTourMapHTML } from "../utils/mapTileGenerator";
 import { parseGPX } from "../utils/gpxParser";
 import { useGlobalLocation } from "../contexts/LocationContext";
-// empty line def
+// empty line def def
 
 interface AudioStop {
   id: string;
@@ -605,26 +605,38 @@ export default function AudioTourScreen() {
                   </View>
                 )}
                 onLoadEnd={() => {
-                  console.log('Audio tour map loaded, user location enabled:', showUserLocation, 'location:', location);
+                  console.log(
+                    "Audio tour map loaded, user location enabled:",
+                    showUserLocation,
+                    "location:",
+                    location,
+                  );
 
                   // First send the toggle state to enable/disable user location
                   setTimeout(() => {
-                    webViewRef.current?.postMessage(JSON.stringify({
-                      action: 'toggleUserLocation',
-                      enable: showUserLocation,
-                    }));
+                    webViewRef.current?.postMessage(
+                      JSON.stringify({
+                        action: "toggleUserLocation",
+                        enable: showUserLocation,
+                      }),
+                    );
                   }, 500);
 
                   // Then send current location if available and enabled
                   if (showUserLocation && location) {
-                    console.log('Sending initial location to audio tour map:', location);
+                    console.log(
+                      "Sending initial location to audio tour map:",
+                      location,
+                    );
                     setTimeout(() => {
-                      webViewRef.current?.postMessage(JSON.stringify({
-                        action: 'updateUserLocation',
-                        latitude: location.latitude,
-                        longitude: location.longitude,
-                        heading: location.heading || 0
-                      }));
+                      webViewRef.current?.postMessage(
+                        JSON.stringify({
+                          action: "updateUserLocation",
+                          latitude: location.latitude,
+                          longitude: location.longitude,
+                          heading: location.heading || 0,
+                        }),
+                      );
                     }, 700);
                   }
                 }}
