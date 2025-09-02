@@ -151,14 +151,14 @@ export default function SightseeingScreen() {
           {/* Header */}
           <View style={styles.header}>
             <Text style={styles.headerTitle}>Sightseeing</Text>
-            <TouchableOpacity
+            <TouchableOpacity 
+              onPress={toggleLocationTracking} 
               style={styles.locationButton}
-              onPress={toggleLocationTracking}
             >
-              <Ionicons 
-                name={showUserLocation ? "location" : "location-outline"} 
-                size={24} 
-                color={showUserLocation ? theme.colors.accent : "white"} 
+              <Ionicons
+                name={showUserLocation ? "location" : "location-outline"}
+                size={24}
+                color={showUserLocation ? theme.colors.accent : "white"}
               />
             </TouchableOpacity>
           </View>
