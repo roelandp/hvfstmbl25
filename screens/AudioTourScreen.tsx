@@ -16,7 +16,7 @@ import { useAudioPlayer, AudioSource, AudioStatus } from 'expo-audio';
 import { theme } from '../theme';
 import { generateAudioTourMapHTML } from '../utils/mapTileGenerator';
 import { parseGPX } from '../utils/gpxParser';
-import { useLocation } from '../utils/useLocation';
+import { useGlobalLocation } from '../contexts/LocationContext';
 
 
 interface AudioStop {
@@ -38,16 +38,12 @@ export default function AudioTourScreen() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
-  const [showUserLocation, setShowUserLocation] = useState(false);
   const webViewRef = useRef<WebView>(null);
 
   // State to hold the parsed GPX route data
   const [gpxRoute, setGpxRoute] = useState<{ lat: number; lon: number }[]>([]);
 
-  const { location, hasPermission, isTracking, startTracking, stopTracking } = useLocation({
-    distanceInterval: 15, // More frequent for audio tour
-    enableHighAccuracy: false
-  });
+  const { location, showUserLocation, isTracking, hasPermission, toggleLocationTracking } = useGlobalLocation();
 
   const player = useAudioPlayer();
 
@@ -357,6 +353,7 @@ export default function AudioTourScreen() {
   // Update user location on map when location changes
   useEffect(() => {
     if (location && webViewRef.current && showUserLocation) {
+      console.log('Sending location update to AudioTourScreen WebView:', location);
       webViewRef.current.postMessage(JSON.stringify({
         action: 'updateUserLocation',
         latitude: location.latitude,
@@ -366,21 +363,7 @@ export default function AudioTourScreen() {
     }
   }, [location, showUserLocation]);
 
-  const toggleLocationTracking = async () => {
-    if (!showUserLocation) {
-      setShowUserLocation(true);
-      await startTracking();
-    } else {
-      setShowUserLocation(false);
-      stopTracking();
-      if (webViewRef.current) {
-        webViewRef.current.postMessage(JSON.stringify({
-          action: 'toggleUserLocation',
-          enable: false
-        }));
-      }
-    }
-  };
+  
 
   // Static mapping of audio files for require()
   const audioFiles: { [key: string]: any } = {
@@ -572,6 +555,20 @@ export default function AudioTourScreen() {
                     <Text style={styles.loadingText}>Loading map...</Text>
                   </View>
                 )}
+                onLoadEnd={() => {
+                  console.log('Audio tour map loaded, user location enabled:', showUserLocation, 'location:', location);
+                  if (showUserLocation && location) {
+                    console.log('Sending initial location to audio tour map:', location);
+                    setTimeout(() => {
+                      webViewRef.current?.postMessage(JSON.stringify({
+                        action: 'updateUserLocation',
+                        latitude: location.latitude,
+                        longitude: location.longitude,
+                        heading: location.heading || 0
+                      }));
+                    }, 1000); // Give WebView time to fully load
+                  }
+                }}
               />
             ) : (
               <View style={styles.noDataContainer}>
