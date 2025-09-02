@@ -1,9 +1,10 @@
-import React, { useCallback, useEffect, useState } from 'react';
-import { NavigationContainer } from '@react-navigation/native';
-import * as SplashScreen from 'expo-splash-screen';
-import * as Font from 'expo-font';
-import Tabs from './navigation/Tabs';
-import { LocationProvider } from './contexts/LocationContext';
+import React, { useCallback, useEffect, useState } from "react";
+import { NavigationContainer } from "@react-navigation/native";
+import * as SplashScreen from "expo-splash-screen";
+import * as Font from "expo-font";
+import Tabs from "./navigation/Tabs";
+import { LocationProvider } from "./contexts/LocationContext";
+// comment empty
 
 SplashScreen.preventAutoHideAsync();
 
@@ -15,8 +16,8 @@ export default function App() {
       try {
         // Load fonts or other assets
         await Font.loadAsync({
-          Garamond: require('./assets/fonts/EBGaramond.otf'),
-          NotoSans: require('./assets/fonts/NotoSans-Regular.ttf'),
+          Garamond: require("./assets/fonts/EBGaramond.otf"),
+          NotoSans: require("./assets/fonts/NotoSans-Regular.ttf"),
         });
       } catch (e) {
         console.warn(e);
