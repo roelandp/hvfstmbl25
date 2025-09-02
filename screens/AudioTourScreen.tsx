@@ -435,6 +435,26 @@ export default function AudioTourScreen() {
     "28": require("../assets/audiotour/28.mp3"),
     "29": require("../assets/audiotour/29.mp3"),
     "30": require("../assets/audiotour/30.mp3"),
+    "11": require("../assets/audiotour/11.mp3"),
+    "12": require("../assets/audiotour/12.mp3"),
+    "13": require("../assets/audiotour/13.mp3"),
+    "14": require("../assets/audiotour/14.mp3"),
+    "15": require("../assets/audiotour/15.mp3"),
+    "16": require("../assets/audiotour/16.mp3"),
+    "17": require("../assets/audiotour/17.mp3"),
+    "18": require("../assets/audiotour/18.mp3"),
+    "19": require("../assets/audiotour/19.mp3"),
+    "20": require("../assets/audiotour/20.mp3"),
+    "21": require("../assets/audiotour/21.mp3"),
+    "22": require("../assets/audiotour/22.mp3"),
+    "23": require("../assets/audiotour/23.mp3"),
+    "24": require("../assets/audiotour/24.mp3"),
+    "25": require("../assets/audiotour/25.mp3"),
+    "26": require("../assets/audiotour/26.mp3"),
+    "27": require("../assets/audiotour/27.mp3"),
+    "28": require("../assets/audiotour/28.mp3"),
+    "29": require("../assets/audiotour/29.mp3"),
+    "30": require("../assets/audiotour/30.mp3"),
   };
 
   const playAudio = async (stop: AudioStop) => {
@@ -614,13 +634,16 @@ export default function AudioTourScreen() {
 
                   // First send the toggle state to enable/disable user location
                   setTimeout(() => {
-                    webViewRef.current?.postMessage(
-                      JSON.stringify({
-                        action: "toggleUserLocation",
-                        enable: showUserLocation,
-                      }),
-                    );
-                  }, 500);
+                    if (webViewRef.current) {
+                      console.log("Sending toggleUserLocation to audio tour:", showUserLocation);
+                      webViewRef.current.postMessage(
+                        JSON.stringify({
+                          action: "toggleUserLocation",
+                          enable: showUserLocation,
+                        }),
+                      );
+                    }
+                  }, 1000);
 
                   // Then send current location if available and enabled
                   if (showUserLocation && location) {
@@ -629,15 +652,17 @@ export default function AudioTourScreen() {
                       location,
                     );
                     setTimeout(() => {
-                      webViewRef.current?.postMessage(
-                        JSON.stringify({
-                          action: "updateUserLocation",
-                          latitude: location.latitude,
-                          longitude: location.longitude,
-                          heading: location.heading || 0,
-                        }),
-                      );
-                    }, 700);
+                      if (webViewRef.current) {
+                        webViewRef.current.postMessage(
+                          JSON.stringify({
+                            action: "updateUserLocation",
+                            latitude: location.latitude,
+                            longitude: location.longitude,
+                            heading: location.heading || 0,
+                          }),
+                        );
+                      }
+                    }, 1500);
                   }
                 }}
               />

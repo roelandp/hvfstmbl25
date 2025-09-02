@@ -224,8 +224,15 @@ export function generateAudioTourMapHTML(audioStops: any[], centerLat: number, c
         }
 
         // Listen for messages from React Native
-        window.addEventListener('message', handleMessage);
+        if (window.ReactNativeWebView) {
+          window.addEventListener('message', handleMessage);
+        }
         document.addEventListener('message', handleMessage);
+        
+        // Additional message handler for React Native WebView
+        if (typeof window !== 'undefined' && window.ReactNativeWebView) {
+          window.ReactNativeWebView.onMessage = handleMessage;
+        }
     </script>
 </body>
 </html>`;
