@@ -200,39 +200,32 @@ export function generateAudioTourMapHTML(audioStops: any[], centerLat: number, c
         window.updateUserLocation = updateUserLocation;
         window.toggleUserLocation = toggleUserLocation;
 
-        // Handle messages from React Native
-        window.addEventListener('message', function(event) {
+        // Handle messages from React Native WebView
+        function handleMessage(event) {
           try {
             const data = JSON.parse(event.data);
-            console.log('WebView received message:', data);
+            console.log('Audio tour WebView received message:', data);
             if (data.action === 'updateUserLocation') {
-              console.log('Updating user location in WebView:', data.latitude, data.longitude, data.heading);
+              console.log('Updating user location in audio tour:', data.latitude, data.longitude, data.heading);
               updateUserLocation(data.latitude, data.longitude, data.heading);
             } else if (data.action === 'toggleUserLocation') {
-              console.log('Toggling user location in WebView:', data.enable);
+              console.log('Toggling user location in audio tour:', data.enable);
               toggleUserLocation(data.enable);
+            } else if (data.action === 'setActiveMarker') {
+              if (markers[data.index]) {
+                markers.forEach(m => m.getElement().classList.remove('active'));
+                markers[data.index].getElement().classList.add('active');
+                markers[data.index].openPopup();
+              }
             }
           } catch (error) {
-            console.error('Error handling message:', error);
+            console.error('Error handling audio tour message:', error);
           }
-        });
+        }
 
-        // Also handle the message event for React Native WebView
-        document.addEventListener('message', function(event) {
-          try {
-            const data = JSON.parse(event.data);
-            console.log('WebView received document message:', data);
-            if (data.action === 'updateUserLocation') {
-              console.log('Updating user location via document message:', data.latitude, data.longitude, data.heading);
-              updateUserLocation(data.latitude, data.longitude, data.heading);
-            } else if (data.action === 'toggleUserLocation') {
-              console.log('Toggling user location via document message:', data.enable);
-              toggleUserLocation(data.enable);
-            }
-          } catch (error) {
-            console.error('Error handling document message:', error);
-          }
-        });
+        // Listen for messages from React Native
+        window.addEventListener('message', handleMessage);
+        document.addEventListener('message', handleMessage);
     </script>
 </body>
 </html>`;
