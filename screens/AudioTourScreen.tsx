@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef } from "react";
 import {
   View,
   Text,
@@ -9,15 +9,15 @@ import {
   Alert,
   TouchableOpacity,
   Dimensions,
-} from 'react-native';
-import { WebView } from 'react-native-webview';
-import { Ionicons } from '@expo/vector-icons';
-import { useAudioPlayer, AudioSource, AudioStatus } from 'expo-audio';
-import { theme } from '../theme';
-import { generateAudioTourMapHTML } from '../utils/mapTileGenerator';
-import { parseGPX } from '../utils/gpxParser';
-import { useGlobalLocation } from '../contexts/LocationContext';
-
+} from "react-native";
+import { WebView } from "react-native-webview";
+import { Ionicons } from "@expo/vector-icons";
+import { useAudioPlayer, AudioSource, AudioStatus } from "expo-audio";
+import { theme } from "../theme";
+import { generateAudioTourMapHTML } from "../utils/mapTileGenerator";
+import { parseGPX } from "../utils/gpxParser";
+import { useGlobalLocation } from "../contexts/LocationContext";
+// empty line
 
 interface AudioStop {
   id: string;
@@ -27,12 +27,12 @@ interface AudioStop {
   lon: number;
 }
 
-const { width } = Dimensions.get('window');
+const { width } = Dimensions.get("window");
 
 export default function AudioTourScreen() {
   const [stops, setStops] = useState<AudioStop[]>([]);
   const [loading, setLoading] = useState(true);
-  const [mapHTML, setMapHTML] = useState<string>('');
+  const [mapHTML, setMapHTML] = useState<string>("");
   const [currentStop, setCurrentStop] = useState<AudioStop | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -43,7 +43,13 @@ export default function AudioTourScreen() {
   // State to hold the parsed GPX route data
   const [gpxRoute, setGpxRoute] = useState<{ lat: number; lon: number }[]>([]);
 
-  const { location, showUserLocation, isTracking, hasPermission, toggleLocationTracking } = useGlobalLocation();
+  const {
+    location,
+    showUserLocation,
+    isTracking,
+    hasPermission,
+    toggleLocationTracking,
+  } = useGlobalLocation();
 
   const player = useAudioPlayer();
 
@@ -172,28 +178,31 @@ export default function AudioTourScreen() {
     </trkseg>
   </trk>
 </gpx>`;
-        
+
         const parsedRoute = parseGPX(gpxContent);
         setGpxRoute(parsedRoute);
-        console.log('Parsed GPX Route:', parsedRoute.length, 'points');
+        console.log("Parsed GPX Route:", parsedRoute.length, "points");
       } catch (error) {
-        console.error('Error parsing GPX data:', error);
-        Alert.alert('GPX Error', 'Failed to load route data');
+        console.error("Error parsing GPX data:", error);
+        Alert.alert("GPX Error", "Failed to load route data");
       }
     };
 
     loadData();
 
     // Set up audio player event listeners
-    const statusSubscription = player.addListener('playbackStatusUpdate', (status: any) => {
-      console.log('Audio status update:', status);
-      if (status.isLoaded) {
-        // expo-audio uses different property names
-        setIsPlaying(status.playing || false);
-        setCurrentTime(status.currentTime || 0);
-        setDuration(status.duration || 0);
-      }
-    });
+    const statusSubscription = player.addListener(
+      "playbackStatusUpdate",
+      (status: any) => {
+        console.log("Audio status update:", status);
+        if (status.isLoaded) {
+          // expo-audio uses different property names
+          setIsPlaying(status.playing || false);
+          setCurrentTime(status.currentTime || 0);
+          setDuration(status.duration || 0);
+        }
+      },
+    );
 
     return () => {
       statusSubscription?.remove();
@@ -202,7 +211,7 @@ export default function AudioTourScreen() {
           player.pause();
         }
       } catch (error) {
-        console.log('Audio cleanup error (expected on unmount):', error);
+        console.log("Audio cleanup error (expected on unmount):", error);
       }
     };
   }, []); // This effect runs once on mount
@@ -242,45 +251,48 @@ export default function AudioTourScreen() {
 29,Independence Flag – Merdeka Square,"[solemnly] This field, now known as Dataran Merdeka or Independence Square, is where Malaysia's history changed forever. On the night of 30 August 1957, thousands gathered here to witness the birth of a new nation. At 11:58 p.m. the lights were switched off for two minutes of silence; then the Union Jack was lowered and the new Malayan flag was hoisted as the crowd cheered 'Merdeka! Merdeka!'. The lights came back on at midnight, marking the start of independence. The field was originally used for cricket and colonial sports but later became the focal point for parades and celebrations. Every Monday morning at 9:45 a.m. a flag raising ceremony takes place here.",3.1478571,101.6933847
 30,Royal Selangor Club,"[playfully] We end our tour at the Royal Selangor Club, founded in 1884 as a meeting place for educated and high‑ranking members of British colonial society. Early members were mostly British officials, although membership was determined more by social standing than race. The club initially occupied a small wooden building but moved into a two‑storey clubhouse designed by A.C. Norman in 1890 and later rebuilt in 1910 by Arthur Benison Hubback in Mock Tudor style. The club earned the nickname 'The Spotted Dog'; some say this referred to its mixed membership, while others claim it was inspired by the two Dalmatians belonging to a founder's wife. Although originally the preserve of European planters and colonial officials, the club's membership gradually diversified and today it hosts Indian lawyers and other professionals. Standing on the terrace, you can almost hear the echoes of cricket matches, rugby games and boisterous parties from days gone by.",3.1487199,101.6928507`;
 
-      const lines = csvData.trim().split('\n');
-      const headers = lines[0].split(',');
+      const lines = csvData.trim().split("\n");
+      const headers = lines[0].split(",");
 
-      const parsedStops: AudioStop[] = lines.slice(1).map(line => {
-        // Handle quoted CSV fields that might contain commas
-        const values = [];
-        let current = '';
-        let inQuotes = false;
+      const parsedStops: AudioStop[] = lines
+        .slice(1)
+        .map((line) => {
+          // Handle quoted CSV fields that might contain commas
+          const values = [];
+          let current = "";
+          let inQuotes = false;
 
-        for (let i = 0; i < line.length; i++) {
-          const char = line[i];
-          if (char === '"') {
-            inQuotes = !inQuotes;
-          } else if (char === ',' && !inQuotes) {
-            values.push(current.trim());
-            current = '';
-          } else {
-            current += char;
+          for (let i = 0; i < line.length; i++) {
+            const char = line[i];
+            if (char === '"') {
+              inQuotes = !inQuotes;
+            } else if (char === "," && !inQuotes) {
+              values.push(current.trim());
+              current = "";
+            } else {
+              current += char;
+            }
           }
-        }
-        values.push(current.trim()); // Add the last value
+          values.push(current.trim()); // Add the last value
 
-        return {
-          id: values[0]?.replace(/"/g, '') || '',
-          title: values[1]?.replace(/"/g, '') || '',
-          script_text: values[2]?.replace(/"/g, '') || '',
-          lat: parseFloat(values[3]?.replace(/"/g, '') || '0'),
-          lon: parseFloat(values[4]?.replace(/"/g, '') || '0')
-        };
-      }).filter(stop => stop.id && !isNaN(stop.lat) && !isNaN(stop.lon));
+          return {
+            id: values[0]?.replace(/"/g, "") || "",
+            title: values[1]?.replace(/"/g, "") || "",
+            script_text: values[2]?.replace(/"/g, "") || "",
+            lat: parseFloat(values[3]?.replace(/"/g, "") || "0"),
+            lon: parseFloat(values[4]?.replace(/"/g, "") || "0"),
+          };
+        })
+        .filter((stop) => stop.id && !isNaN(stop.lat) && !isNaN(stop.lon));
 
-      console.log('Loaded stops:', parsedStops.length);
+      console.log("Loaded stops:", parsedStops.length);
       setStops(parsedStops);
 
       // Set loading to false only after both stops and GPX are processed (or attempted)
       // This will be handled by the useEffect that depends on stops and gpxRoute
     } catch (error) {
-      console.error('Error loading audio stops:', error);
-      Alert.alert('Error', 'Failed to load audio tour data');
+      console.error("Error loading audio stops:", error);
+      Alert.alert("Error", "Failed to load audio tour data");
       setLoading(false); // Ensure loading is false even on error
     }
   };
@@ -288,18 +300,18 @@ export default function AudioTourScreen() {
   // Effect to generate map HTML when stops or GPX data is ready
   useEffect(() => {
     if (stops.length > 0 && gpxRoute.length > 0) {
-      console.log('Generating map with stops and GPX route...');
-      const latitudes = stops.map(s => s.lat);
-      const longitudes = stops.map(s => s.lon);
+      console.log("Generating map with stops and GPX route...");
+      const latitudes = stops.map((s) => s.lat);
+      const longitudes = stops.map((s) => s.lon);
       // Calculate center based on all points (stops + GPX route)
-      const allLat = [...latitudes, ...gpxRoute.map(p => p.lat)];
-      const allLon = [...longitudes, ...gpxRoute.map(p => p.lon)];
+      const allLat = [...latitudes, ...gpxRoute.map((p) => p.lat)];
+      const allLon = [...longitudes, ...gpxRoute.map((p) => p.lon)];
 
       if (allLat.length === 0 || allLon.length === 0) {
-          console.error("No valid coordinates found for map centering.");
-          setMapHTML(''); // Clear map HTML if no coordinates
-          setLoading(false);
-          return;
+        console.error("No valid coordinates found for map centering.");
+        setMapHTML(""); // Clear map HTML if no coordinates
+        setLoading(false);
+        return;
       }
 
       const centerLat = (Math.min(...allLat) + Math.max(...allLat)) / 2;
@@ -309,42 +321,65 @@ export default function AudioTourScreen() {
       // NOTE: You must update ../utils/mapTileGenerator.ts to accept and use the 'gpxRoute' parameter.
       // For example, its signature might become:
       // generateAudioTourMapHTML(audioStops: AudioStop[], centerLat: number, centerLng: number, gpxRoute?: { lat: number; lon: number }[]): string
-      const html = generateAudioTourMapHTML(stops, centerLat, centerLng, gpxRoute, showUserLocation);
+      const html = generateAudioTourMapHTML(
+        stops,
+        centerLat,
+        centerLng,
+        gpxRoute,
+        showUserLocation,
+      );
       setMapHTML(html);
       setLoading(false); // Set loading to false once map is generated
     } else if (stops.length > 0 && gpxRoute.length === 0) {
       // If GPX failed or is empty, generate map with stops only
-      console.log('Generating map with stops only (GPX data missing or empty)...');
-      const latitudes = stops.map(s => s.lat);
-      const longitudes = stops.map(s => s.lon);
+      console.log(
+        "Generating map with stops only (GPX data missing or empty)...",
+      );
+      const latitudes = stops.map((s) => s.lat);
+      const longitudes = stops.map((s) => s.lon);
 
       if (latitudes.length === 0 || longitudes.length === 0) {
-          console.error("No valid coordinates found for map centering.");
-          setMapHTML('');
-          setLoading(false);
-          return;
+        console.error("No valid coordinates found for map centering.");
+        setMapHTML("");
+        setLoading(false);
+        return;
       }
 
       const centerLat = (Math.min(...latitudes) + Math.max(...latitudes)) / 2;
       const centerLng = (Math.min(...longitudes) + Math.max(...longitudes)) / 2;
-      const html = generateAudioTourMapHTML(stops, centerLat, centerLng, undefined, showUserLocation); // No GPX data
+      const html = generateAudioTourMapHTML(
+        stops,
+        centerLat,
+        centerLng,
+        undefined,
+        showUserLocation,
+      ); // No GPX data
       setMapHTML(html);
       setLoading(false);
     } else if (stops.length === 0) {
       // If stops failed to load, but GPX is present, generate map with GPX route only
       if (gpxRoute.length > 0) {
-          console.log('Generating map with GPX route only (audio stops missing)...');
-          const latitudes = gpxRoute.map(p => p.lat);
-          const longitudes = gpxRoute.map(p => p.lon);
-          const centerLat = (Math.min(...latitudes) + Math.max(...latitudes)) / 2;
-          const centerLng = (Math.min(...longitudes) + Math.max(...longitudes)) / 2;
-          // Assuming generateAudioTourMapHTML can accept only GPX route if no stops
-          // This might require an update to mapTileGenerator
-          const html = generateAudioTourMapHTML([], centerLat, centerLng, gpxRoute, showUserLocation);
-          setMapHTML(html);
+        console.log(
+          "Generating map with GPX route only (audio stops missing)...",
+        );
+        const latitudes = gpxRoute.map((p) => p.lat);
+        const longitudes = gpxRoute.map((p) => p.lon);
+        const centerLat = (Math.min(...latitudes) + Math.max(...latitudes)) / 2;
+        const centerLng =
+          (Math.min(...longitudes) + Math.max(...longitudes)) / 2;
+        // Assuming generateAudioTourMapHTML can accept only GPX route if no stops
+        // This might require an update to mapTileGenerator
+        const html = generateAudioTourMapHTML(
+          [],
+          centerLat,
+          centerLng,
+          gpxRoute,
+          showUserLocation,
+        );
+        setMapHTML(html);
       } else {
-          console.log('No stops or GPX data available to generate map.');
-          setMapHTML(''); // Clear map if no data
+        console.log("No stops or GPX data available to generate map.");
+        setMapHTML(""); // Clear map if no data
       }
       setLoading(false);
     }
@@ -353,50 +388,53 @@ export default function AudioTourScreen() {
   // Update user location on map when location changes
   useEffect(() => {
     if (location && webViewRef.current && showUserLocation) {
-      console.log('Sending location update to AudioTourScreen WebView:', location);
-      webViewRef.current.postMessage(JSON.stringify({
-        action: 'updateUserLocation',
-        latitude: location.latitude,
-        longitude: location.longitude,
-        heading: location.heading || 0
-      }));
+      console.log(
+        "Sending location update to AudioTourScreen WebView:",
+        location,
+      );
+      webViewRef.current.postMessage(
+        JSON.stringify({
+          action: "updateUserLocation",
+          latitude: location.latitude,
+          longitude: location.longitude,
+          heading: location.heading || 0,
+        }),
+      );
     }
   }, [location, showUserLocation]);
 
-  
-
   // Static mapping of audio files for require()
   const audioFiles: { [key: string]: any } = {
-    '1': require('../assets/audiotour/1.mp3'),
-    '2': require('../assets/audiotour/2.mp3'),
-    '3': require('../assets/audiotour/3.mp3'),
-    '4': require('../assets/audiotour/4.mp3'),
-    '5': require('../assets/audiotour/5.mp3'),
-    '6': require('../assets/audiotour/6.mp3'),
-    '7': require('../assets/audiotour/7.mp3'),
-    '8': require('../assets/audiotour/8.mp3'),
-    '9': require('../assets/audiotour/9.mp3'),
-    '10': require('../assets/audiotour/10.mp3'),
-    '11': require('../assets/audiotour/11.mp3'),
-    '12': require('../assets/audiotour/12.mp3'),
-    '13': require('../assets/audiotour/13.mp3'),
-    '14': require('../assets/audiotour/14.mp3'),
-    '15': require('../assets/audiotour/15.mp3'),
-    '16': require('../assets/audiotour/16.mp3'),
-    '17': require('../assets/audiotour/17.mp3'),
-    '18': require('../assets/audiotour/18.mp3'),
-    '19': require('../assets/audiotour/19.mp3'),
-    '20': require('../assets/audiotour/20.mp3'),
-    '21': require('../assets/audiotour/21.mp3'),
-    '22': require('../assets/audiotour/22.mp3'),
-    '23': require('../assets/audiotour/23.mp3'),
-    '24': require('../assets/audiotour/24.mp3'),
-    '25': require('../assets/audiotour/25.mp3'),
-    '26': require('../assets/audiotour/26.mp3'),
-    '27': require('../assets/audiotour/27.mp3'),
-    '28': require('../assets/audiotour/28.mp3'),
-    '29': require('../assets/audiotour/29.mp3'),
-    '30': require('../assets/audiotour/30.mp3'),
+    "1": require("../assets/audiotour/1.mp3"),
+    "2": require("../assets/audiotour/2.mp3"),
+    "3": require("../assets/audiotour/3.mp3"),
+    "4": require("../assets/audiotour/4.mp3"),
+    "5": require("../assets/audiotour/5.mp3"),
+    "6": require("../assets/audiotour/6.mp3"),
+    "7": require("../assets/audiotour/7.mp3"),
+    "8": require("../assets/audiotour/8.mp3"),
+    "9": require("../assets/audiotour/9.mp3"),
+    "10": require("../assets/audiotour/10.mp3"),
+    "11": require("../assets/audiotour/11.mp3"),
+    "12": require("../assets/audiotour/12.mp3"),
+    "13": require("../assets/audiotour/13.mp3"),
+    "14": require("../assets/audiotour/14.mp3"),
+    "15": require("../assets/audiotour/15.mp3"),
+    "16": require("../assets/audiotour/16.mp3"),
+    "17": require("../assets/audiotour/17.mp3"),
+    "18": require("../assets/audiotour/18.mp3"),
+    "19": require("../assets/audiotour/19.mp3"),
+    "20": require("../assets/audiotour/20.mp3"),
+    "21": require("../assets/audiotour/21.mp3"),
+    "22": require("../assets/audiotour/22.mp3"),
+    "23": require("../assets/audiotour/23.mp3"),
+    "24": require("../assets/audiotour/24.mp3"),
+    "25": require("../assets/audiotour/25.mp3"),
+    "26": require("../assets/audiotour/26.mp3"),
+    "27": require("../assets/audiotour/27.mp3"),
+    "28": require("../assets/audiotour/28.mp3"),
+    "29": require("../assets/audiotour/29.mp3"),
+    "30": require("../assets/audiotour/30.mp3"),
   };
 
   const playAudio = async (stop: AudioStop) => {
@@ -406,21 +444,26 @@ export default function AudioTourScreen() {
 
       // Update active marker on map
       if (webViewRef.current) {
-        webViewRef.current.postMessage(JSON.stringify({
-          action: 'setActiveMarker',
-          index: parseInt(stop.id) - 1
-        }));
+        webViewRef.current.postMessage(
+          JSON.stringify({
+            action: "setActiveMarker",
+            index: parseInt(stop.id) - 1,
+          }),
+        );
       }
 
       // Get audio source from static mapping
       const audioUri = audioFiles[stop.id];
       if (!audioUri) {
-        Alert.alert('Audio Error', 'Audio file for stop ' + stop.id + ' not found.');
+        Alert.alert(
+          "Audio Error",
+          "Audio file for stop " + stop.id + " not found.",
+        );
         return;
       }
 
-      console.log('Attempting to play audio for stop:', stop.id);
-      console.log('Audio URI:', audioUri);
+      console.log("Attempting to play audio for stop:", stop.id);
+      console.log("Audio URI:", audioUri);
 
       // Stop current audio if playing
       try {
@@ -428,45 +471,48 @@ export default function AudioTourScreen() {
           await player.pause();
         }
       } catch (pauseError) {
-        console.log('Pause error (continuing):', pauseError);
+        console.log("Pause error (continuing):", pauseError);
       }
 
       // Load and play new audio
       await player.replace(audioUri as AudioSource);
       await player.play();
 
-      console.log('Audio playback started');
+      console.log("Audio playback started");
     } catch (error) {
-      console.error('Error playing audio:', error);
-      Alert.alert('Audio Error', `Could not play audio for stop ${stop.id}: ${error.message}`);
+      console.error("Error playing audio:", error);
+      Alert.alert(
+        "Audio Error",
+        `Could not play audio for stop ${stop.id}: ${error.message}`,
+      );
     }
   };
 
   const togglePlayPause = async () => {
     try {
       if (!currentStop) {
-        console.log('No current stop selected');
+        console.log("No current stop selected");
         return;
       }
-      
+
       if (isPlaying) {
         await player.pause();
-        console.log('Audio paused');
+        console.log("Audio paused");
       } else {
         await player.play();
-        console.log('Audio resumed');
+        console.log("Audio resumed");
       }
     } catch (error) {
-      console.error('Error toggling playback:', error);
-      Alert.alert('Audio Error', 'Unable to control audio playback');
+      console.error("Error toggling playback:", error);
+      Alert.alert("Audio Error", "Unable to control audio playback");
     }
   };
 
-  const navigateToStop = (direction: 'prev' | 'next') => {
+  const navigateToStop = (direction: "prev" | "next") => {
     let newIndex = currentIndex;
-    if (direction === 'prev' && currentIndex > 0) {
+    if (direction === "prev" && currentIndex > 0) {
       newIndex = currentIndex - 1;
-    } else if (direction === 'next' && currentIndex < stops.length - 1) {
+    } else if (direction === "next" && currentIndex < stops.length - 1) {
       newIndex = currentIndex + 1;
     }
 
@@ -479,7 +525,7 @@ export default function AudioTourScreen() {
   const formatTime = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = Math.floor(seconds % 60);
-    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+    return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
   };
 
   if (loading) {
@@ -516,10 +562,10 @@ export default function AudioTourScreen() {
               style={styles.locationButton}
               onPress={toggleLocationTracking}
             >
-              <Ionicons 
-                name={showUserLocation ? "location" : "location-outline"} 
-                size={24} 
-                color={showUserLocation ? theme.colors.accent : "white"} 
+              <Ionicons
+                name={showUserLocation ? "location" : "location-outline"}
+                size={24}
+                color={showUserLocation ? theme.colors.accent : "white"}
               />
             </TouchableOpacity>
           </View>
@@ -532,18 +578,18 @@ export default function AudioTourScreen() {
                 source={{ html: mapHTML }}
                 style={styles.webview}
                 onError={(error) => {
-                  console.error('WebView error:', error);
-                  Alert.alert('Map Error', 'Failed to load map');
+                  console.error("WebView error:", error);
+                  Alert.alert("Map Error", "Failed to load map");
                 }}
                 onMessage={(event) => {
                   try {
                     const data = JSON.parse(event.nativeEvent.data);
-                    console.log('WebView message:', data);
-                    if (data.type === 'stopClick') {
+                    console.log("WebView message:", data);
+                    if (data.type === "stopClick") {
                       playAudio(data.stop);
                     }
                   } catch (error) {
-                    console.error('Error parsing message:', error);
+                    console.error("Error parsing message:", error);
                   }
                 }}
                 javaScriptEnabled={true}
@@ -551,29 +597,48 @@ export default function AudioTourScreen() {
                 startInLoadingState={true}
                 renderLoading={() => (
                   <View style={styles.webviewLoading}>
-                    <ActivityIndicator size="large" color={theme.colors.primary} />
+                    <ActivityIndicator
+                      size="large"
+                      color={theme.colors.primary}
+                    />
                     <Text style={styles.loadingText}>Loading map...</Text>
                   </View>
                 )}
                 onLoadEnd={() => {
-                  console.log('Audio tour map loaded, user location enabled:', showUserLocation, 'location:', location);
+                  console.log(
+                    "Audio tour map loaded, user location enabled:",
+                    showUserLocation,
+                    "location:",
+                    location,
+                  );
                   if (showUserLocation && location) {
-                    console.log('Sending initial location to audio tour map:', location);
+                    console.log(
+                      "Sending initial location to audio tour map:",
+                      location,
+                    );
                     setTimeout(() => {
-                      webViewRef.current?.postMessage(JSON.stringify({
-                        action: 'updateUserLocation',
-                        latitude: location.latitude,
-                        longitude: location.longitude,
-                        heading: location.heading || 0
-                      }));
+                      webViewRef.current?.postMessage(
+                        JSON.stringify({
+                          action: "updateUserLocation",
+                          latitude: location.latitude,
+                          longitude: location.longitude,
+                          heading: location.heading || 0,
+                        }),
+                      );
                     }, 1000); // Give WebView time to fully load
                   }
                 }}
               />
             ) : (
               <View style={styles.noDataContainer}>
-                <Ionicons name="headset-outline" size={64} color={theme.colors.muted} />
-                <Text style={styles.noDataText}>No audio tour data available</Text>
+                <Ionicons
+                  name="headset-outline"
+                  size={64}
+                  color={theme.colors.muted}
+                />
+                <Text style={styles.noDataText}>
+                  No audio tour data available
+                </Text>
                 <Text style={styles.noDataSubtext}>
                   Found {stops.length} stops
                 </Text>
@@ -593,23 +658,48 @@ export default function AudioTourScreen() {
 
               <View style={styles.controls}>
                 <TouchableOpacity
-                  style={[styles.controlButton, currentIndex === 0 && styles.disabledButton]}
-                  onPress={() => navigateToStop('prev')}
+                  style={[
+                    styles.controlButton,
+                    currentIndex === 0 && styles.disabledButton,
+                  ]}
+                  onPress={() => navigateToStop("prev")}
                   disabled={currentIndex === 0}
                 >
-                  <Ionicons name="play-skip-back" size={24} color={currentIndex === 0 ? theme.colors.muted : 'white'} />
-                </TouchableOpacity>
-
-                <TouchableOpacity style={styles.playButton} onPress={togglePlayPause}>
-                  <Ionicons name={isPlaying ? 'pause' : 'play'} size={32} color="white" />
+                  <Ionicons
+                    name="play-skip-back"
+                    size={24}
+                    color={currentIndex === 0 ? theme.colors.muted : "white"}
+                  />
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                  style={[styles.controlButton, currentIndex === stops.length - 1 && styles.disabledButton]}
-                  onPress={() => navigateToStop('next')}
+                  style={styles.playButton}
+                  onPress={togglePlayPause}
+                >
+                  <Ionicons
+                    name={isPlaying ? "pause" : "play"}
+                    size={32}
+                    color="white"
+                  />
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.controlButton,
+                    currentIndex === stops.length - 1 && styles.disabledButton,
+                  ]}
+                  onPress={() => navigateToStop("next")}
                   disabled={currentIndex === stops.length - 1}
                 >
-                  <Ionicons name="play-skip-forward" size={24} color={currentIndex === stops.length - 1 ? theme.colors.muted : 'white'} />
+                  <Ionicons
+                    name="play-skip-forward"
+                    size={24}
+                    color={
+                      currentIndex === stops.length - 1
+                        ? theme.colors.muted
+                        : "white"
+                    }
+                  />
                 </TouchableOpacity>
               </View>
 
@@ -619,7 +709,9 @@ export default function AudioTourScreen() {
                   <View
                     style={[
                       styles.progressFill,
-                      { width: `${duration > 0 ? (currentTime / duration) * 100 : 0}%` }
+                      {
+                        width: `${duration > 0 ? (currentTime / duration) * 100 : 0}%`,
+                      },
                     ]}
                   />
                 </View>
@@ -638,8 +730,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   loadingContainer: {
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     backgroundColor: theme.colors.background,
   },
   loadingText: {
@@ -653,22 +745,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 20,
     paddingBottom: 16,
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
   },
   headerTitle: {
-    color: 'white',
+    color: "white",
     fontSize: 34,
     fontFamily: theme.fonts.heading,
-    fontWeight: '700',
+    fontWeight: "700",
     flex: 1,
-    textAlign: 'center',
+    textAlign: "center",
   },
   locationButton: {
     padding: 8,
     borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: "rgba(255,255,255,0.1)",
   },
   mapContainer: {
     flex: 1,
@@ -678,36 +770,36 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   webviewLoading: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     backgroundColor: theme.colors.background,
   },
   noDataContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     backgroundColor: theme.colors.background,
     paddingHorizontal: 32,
   },
   noDataText: {
     fontSize: 18,
     fontFamily: theme.fonts.heading,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
     marginTop: 16,
-    textAlign: 'center',
+    textAlign: "center",
   },
   noDataSubtext: {
     fontSize: 14,
     fontFamily: theme.fonts.body,
     color: theme.colors.muted,
     marginTop: 8,
-    textAlign: 'center',
+    textAlign: "center",
   },
   audioPlayer: {
     backgroundColor: theme.colors.primary,
@@ -719,23 +811,23 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   stopNumber: {
-    color: 'white',
+    color: "white",
     fontSize: 14,
     fontFamily: theme.fonts.body,
-    fontWeight: '600',
+    fontWeight: "600",
     opacity: 0.8,
   },
   stopTitle: {
-    color: 'white',
+    color: "white",
     fontSize: 18,
     fontFamily: theme.fonts.heading,
-    fontWeight: '600',
+    fontWeight: "600",
     marginTop: 4,
   },
   controls: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     marginBottom: 16,
   },
   controlButton: {
@@ -746,20 +838,20 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   playButton: {
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    backgroundColor: "rgba(255,255,255,0.2)",
     width: 64,
     height: 64,
     borderRadius: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginHorizontal: 20,
   },
   progressContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   timeText: {
-    color: 'white',
+    color: "white",
     fontSize: 12,
     fontFamily: theme.fonts.body,
     minWidth: 40,
@@ -767,13 +859,13 @@ const styles = StyleSheet.create({
   progressBar: {
     flex: 1,
     height: 4,
-    backgroundColor: 'rgba(255,255,255,0.3)',
+    backgroundColor: "rgba(255,255,255,0.3)",
     borderRadius: 2,
     marginHorizontal: 12,
   },
   progressFill: {
-    height: '100%',
-    backgroundColor: 'white',
+    height: "100%",
+    backgroundColor: "white",
     borderRadius: 2,
   },
 });
