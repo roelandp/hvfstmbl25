@@ -17,7 +17,7 @@ import { theme } from "../theme";
 import { generateAudioTourMapHTML } from "../utils/mapTileGenerator";
 import { parseGPX } from "../utils/gpxParser";
 import { useGlobalLocation } from "../contexts/LocationContext";
-// empty line
+// empty line def
 
 interface AudioStop {
   id: string;
@@ -629,10 +629,12 @@ export default function AudioTourScreen() {
                   }
                   // Also send the location toggle state
                   setTimeout(() => {
-                    webViewRef.current?.postMessage(JSON.stringify({
-                      action: 'toggleUserLocation',
-                      enable: showUserLocation
-                    }));
+                    webViewRef.current?.postMessage(
+                      JSON.stringify({
+                        action: "toggleUserLocation",
+                        enable: showUserLocation,
+                      }),
+                    );
                   }, 600);
                 }}
               />
